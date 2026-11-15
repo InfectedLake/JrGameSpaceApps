@@ -548,7 +548,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69b7a33696364d640ada6b1f03b8ba8b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Crater::Crater.UI.UIManager
-  baseScale: 1.12
+  art: {fileID: 11400000, guid: 3b9e1f7d2c5a4e8b9f1d3c5e7a9b2d40, type: 2}
 --- !u!1 &1137105806
 GameObject:
   m_ObjectHideFlags: 0

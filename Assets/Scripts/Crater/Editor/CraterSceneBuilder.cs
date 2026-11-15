@@ -117,6 +117,7 @@ namespace Crater.EditorTools
             var sci = Load<ScienceData>(DataRoot + "/Ciencia");
             var order = DefaultContent.Science().Select(x => x.id).ToList();
             gm.science.entries = sci.OrderBy(x => { int i = order.IndexOf(x.id); return i < 0 ? 999 : i; }).ToList();
+            gm.ui.art = BuildArtSet();
 
             Folder("Assets/Scenes");
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -127,6 +128,92 @@ namespace Crater.EditorTools
 
             Selection.activeGameObject = gm.gameObject;
             Debug.Log("[CRATER] Escena creada: " + ScenePath + ". Presiona Play para jugar.");
+        }
+
+        // ------------------------------------------------------------------ Arte original
+
+        const string ArtPath = DataRoot + "/ArtSet.asset";
+        const string SpritesRoot = "Assets/Sprites/";
+
+        /// <summary>
+        /// Vuelve a enlazar ArtSet.asset con los sprites originales por su ruta y lo asigna al UIManager de la
+        /// escena abierta. Úsalo si se reemplazan o renombran sprites. No modifica los archivos de Assets/Sprites.
+        /// </summary>
+        [MenuItem("CRATER/Asignar arte original", priority = 40)]
+        public static void AssignArt()
+        {
+            var set = BuildArtSet();
+            var ui = Object.FindFirstObjectByType<UIManager>();
+            if (ui != null)
+            {
+                Undo.RecordObject(ui, "Asignar arte original");
+                ui.art = set;
+                EditorUtility.SetDirty(ui);
+                EditorSceneManager.MarkSceneDirty(ui.gameObject.scene);
+            }
+            Debug.Log("[CRATER] Arte original asignado" + (ui != null ? " al UIManager de la escena." : ". Abre Crater.unity para asignarlo al UIManager."));
+        }
+
+        static CraterArtSet BuildArtSet()
+        {
+            Folder(DataRoot);
+            var set = AssetDatabase.LoadAssetAtPath<CraterArtSet>(ArtPath);
+            if (set == null) { set = ScriptableObject.CreateInstance<CraterArtSet>(); AssetDatabase.CreateAsset(set, ArtPath); }
+            Sprite S(string path)
+            {
+                var s = AssetDatabase.LoadAssetAtPath<Sprite>(SpritesRoot + path);
+                if (s == null) Debug.LogWarning("[CRATER] No se encontró el sprite " + SpritesRoot + path);
+                return s;
+            }
+            const string g = "gamplay principal/", e = "evento eclipse/", m = "evento micrometeoritos/", t = "evento tormeta solar/edificios tormenta solar_", i = "pantalla de inicio/";
+            set.background = S(g + "fondo principal.png");
+            set.energy = S(g + "edificio energia.png");
+            set.food = S(g + "edificio agua y comida (añade un rover en el suelo alado del tanque de agua).png");
+            set.central = S(g + "edificio central.png");
+            set.oxygen = S(g + "edificio oxigeno.png");
+            set.habitat = S(g + "edificio vivienda.png");
+            set.energyBroken = S(m + "edificio energia roto.png");
+            set.energyLit = S(e + "edificios encendidos_edificio energia.png");
+            set.foodLit = S(e + "edificios encendidos_edificio agua y comida.png");
+            set.oxygenLit = S(e + "edificios encendidos_edificio oxigeno.png");
+            set.habitatLit = S(e + "edificios prendidos_edificio vivienda.png");
+            set.waterEnergy = S(t + "Capa de agua de edificio de energia.png");
+            set.waterFood = S(t + "Capa de agua de edificio de agua y comida.png");
+            set.waterOxygen = S(t + "Capa de pintura 3.png");
+            set.waterHabitat = S(t + "Capa de pintura 4.png");
+            set.dustEnergy = S(t + "polvo edificio energia.png");
+            set.dustFood = S(t + "polvo edificio agua y comida.png");
+            set.dustOxygen = S(t + "polvo edificio oxigeno.png");
+            set.dustHabitat = S(t + "polvo edificio vivienda.png");
+            set.eclipseFilter = S(e + "filtro de obsuresimiento.png");
+            set.eclipseSun = S(e + "sol del eclipse.png");
+            set.eclipseEarth = S(e + "tierra del eclipse.png");
+            set.meteorsOverlay = S(m + "meteoritos de fondo.png");
+            set.topBar = S(g + "fondo de recursos.png");
+            set.slotFood = S(g + "fondo de recurso agua y comida.png");
+            set.slotEnergy = S(g + "fondo de recurso energia.png");
+            set.slotOxygen = S(g + "fondo oxigeno.png");
+            set.slotHealth = S(g + "fondo vivienda.png");
+            set.iconFood = S(g + "recurso agua y comida.png");
+            set.iconEnergy = S(g + "recurso energia.png");
+            set.iconOxygen = S(g + "recurso oxigeno.png");
+            set.iconHealth = S(g + "recurso vivienda.png");
+            set.menuBackground = S(g + "fondo menu.png");
+            set.menuIcon = S(g + "menu.png");
+            set.daysBackground = S(g + "fondo dias pasados.png");
+            set.nextTurn = S(g + "fondo y boton de siguente turno.png");
+            set.panel = S(g + "fondo menu.png");
+            set.infoPanel = S(g + "panel de informacion de edificio.png");
+            set.titleBackground = S(i + "pantalla principal_fondo principal.png");
+            set.titleBanner = S(i + "fondo de titulo del juego.png");
+            set.buttonStart = S(i + "boton inicio.png");
+            set.buttonOptions = S(i + "boton opciones.png");
+            set.buttonCredits = S(i + "boton creditos.png");
+            set.buttonExit = S(i + "boton salir.png");
+            set.buttonSelected = S(i + "boton seleccionado universal.png");
+            EditorUtility.SetDirty(set);
+            AssetDatabase.SaveAssets();
+            return set;
         }
 
         static List<T> Load<T>(string folder) where T : Object

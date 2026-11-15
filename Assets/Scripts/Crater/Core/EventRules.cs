@@ -84,6 +84,7 @@ namespace Crater.Core
         public static RadiationOutcome Resolve(GameState s, ScheduledEvent ev, RadiationDefense d, BalanceConfig c)
         {
             var o = new RadiationOutcome { defense = d };
+            s.today.stormDefense = (int)d;
             o.block = Block(d, s, ev, c, out string why);
 
             switch (d)
@@ -252,6 +253,10 @@ namespace Crater.Core
             var notes = new List<string>();
             s.batteries -= Cost(powered, c);
             s.today.eclipse = true;
+            s.today.eclipsePowerOxygen = powered[(int)EclipseSection.Oxygen];
+            s.today.eclipsePowerFood = powered[(int)EclipseSection.Food];
+            s.today.eclipsePowerEnergy = powered[(int)EclipseSection.EnergyCenter];
+            s.today.eclipsePowerMonitoring = powered[(int)EclipseSection.Monitoring];
             s.eclipseCount++;
             if (!powered[(int)EclipseSection.Oxygen]) s.today.eclipseOxygenUnpowered = true;
             if (!powered[(int)EclipseSection.Food]) s.foodPenaltyTurns = System.Math.Max(s.foodPenaltyTurns, c.eclipseFoodPenaltyTurns);

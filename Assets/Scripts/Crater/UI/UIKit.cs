@@ -171,8 +171,30 @@ namespace Crater.UI
             return img;
         }
 
+        /// <summary>
+        /// Panel original del equipo ("fondo menu", 9-slice). Si está asignado, todos los paneles y botones lo usan
+        /// en lugar del rectángulo generado por código.
+        /// </summary>
+        public static Sprite ArtPanel;
+
         public static Image Panel(Transform parent, string name, Color color, bool raycast = true)
-            => Image(parent, name, color, SpriteFactory.Rounded, raycast);
+        {
+            if (ArtPanel == null) return Image(parent, name, color, SpriteFactory.Rounded, raycast);
+            var img = Image(parent, name, ArtTint(color), ArtPanel, raycast);
+            img.type = UnityEngine.UI.Image.Type.Sliced;
+            return img;
+        }
+
+        /// <summary>Convierte los colores de la paleta provisional en tintes suaves sobre el arte naranja.</summary>
+        public static Color ArtTint(Color c)
+        {
+            if (c == Theme.Disabled) return new Color(0.70f, 0.70f, 0.70f, c.a);
+            if (c == Theme.Accent || c == Theme.AccentDark) return new Color(1f, 0.92f, 0.78f, c.a);
+            if (c == Theme.Good) return new Color(0.80f, 1f, 0.80f, c.a);
+            if (c == Theme.Bad) return new Color(1f, 0.70f, 0.65f, c.a);
+            if (c == Theme.OffGray) return new Color(0.80f, 0.80f, 0.80f, c.a);
+            return new Color(1f, 1f, 1f, c.a);
+        }
 
         public static TextMeshProUGUI Text(Transform parent, string name, string text, float size, Color color,
             TextAlignmentOptions align = TextAlignmentOptions.Left, FontStyles style = FontStyles.Normal)
@@ -201,6 +223,7 @@ namespace Crater.UI
             b.colors = colors;
             b.targetGraphic = img;
             if (onClick != null) b.onClick.AddListener(onClick);
+            if (ArtPanel != null && fg == Color.white) fg = Theme.Ink; // texto oscuro sobre el naranja original
             var t = Text(img.transform, "Label", label, fontSize, fg, TextAlignmentOptions.Center, FontStyles.Bold);
             t.rectTransform.Stretch(10, 4, 10, 4);
             return b;

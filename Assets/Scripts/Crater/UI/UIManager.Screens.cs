@@ -13,55 +13,86 @@ namespace Crater.UI
     // Pantallas completas: menú, configuración, opciones, créditos, ciencia y final.
     public partial class UIManager
     {
-        Button continueButton;
+        RectTransform startChoice;
+        static readonly Color MenuInk = new Color(0.20f, 0.12f, 0.02f);
 
-        // ------------------------------------------------------------------ Menú principal
+        // ------------------------------------------------------------------ Menú principal (arte original: pantalla de inicio)
 
         RectTransform BuildMainMenu()
         {
             var scr = UIFactory.Rect(screensLayer, "Menu").Stretch();
-            var moon = UIFactory.Image(scr, "Luna", Theme.Ground, SpriteFactory.Circle);
-            moon.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, -900), new Vector2(2600, 1500));
-            var r = new System.Random(11);
-            for (int i = 0; i < 12; i++)
+            MenuBackdrop(scr);
+            var screen = UIFactory.Rect(scr, "Composicion").Place(new Vector2(0.5f, 0.5f), Vector2.zero, CraterLayout.ViewSize);
+
+            var banner = UIFactory.Image(screen, "FondoTitulo", Color.white, art.titleBanner);
+            banner.rectTransform.TopLeft(CraterLayout.TitleBanner, art.titleBanner != null ? art.titleBanner.rect.size : new Vector2(1020, 142));
+            var title = UIFactory.Text(banner.transform, "Titulo", "CRATER", 104, MenuInk, TextAlignmentOptions.Center, FontStyles.Bold);
+            title.rectTransform.Stretch(10, 6, 10, 6);
+            title.characterSpacing = 24;
+
+            MenuArtButton(screen, art.buttonStart, CraterLayout.MenuButtons[0], "INICIO", OpenStart);
+            MenuArtButton(screen, art.buttonOptions, CraterLayout.MenuButtons[1], "OPCIONES", ShowOptions);
+            MenuArtButton(screen, art.buttonCredits, CraterLayout.MenuButtons[2], "CRÉDITOS", () => ShowOnly(creditsScreen));
+            MenuArtButton(screen, art.buttonExit, CraterLayout.MenuButtons[3], "SALIR", Quit);
+
+            // INICIO con partida guardada: elegir entre continuar o empezar una nueva.
+            startChoice = UIFactory.Rect(scr, "Inicio").Stretch();
+            var dim = startChoice.gameObject.AddComponent<Image>();
+            dim.color = new Color(0, 0.02f, 0.08f, 0.6f);
+            var box = UIFactory.Panel(startChoice, "Caja", Color.white);
+            box.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(620, 420));
+            var stack = UIFactory.Rect(box.transform, "Opciones").Stretch(50, 40, 50, 60);
+            UIFactory.VStack(stack.gameObject, 20);
+            UIFactory.Size(UIFactory.Button(stack, "Continuar", "CONTINUAR", Theme.Accent, MenuInk, 36, () =>
             {
-                var c = UIFactory.Image(moon.transform, "Crater", Theme.GroundDark, SpriteFactory.Circle);
-                float s = 60 + (float)r.NextDouble() * 160;
-                c.rectTransform.Place(new Vector2((float)(0.25 + r.NextDouble() * 0.5), (float)(0.78 + r.NextDouble() * 0.2)), Vector2.zero, new Vector2(s, s * 0.6f));
-            }
-            var miniBase = UIFactory.Image(scr, "MiniBase", new Color(0.95f, 0.96f, 0.99f), SpriteFactory.Circle);
-            miniBase.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(380, 520), new Vector2(150, 90));
-            var miniRing = UIFactory.Image(miniBase.transform, "Anillo", new Color(0.55f, 0.70f, 0.95f), SpriteFactory.Ring);
-            miniRing.rectTransform.Stretch();
-
-            var title = UIFactory.Text(scr, "Titulo", "CRATER", 170, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-            title.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -90), new Vector2(1200, 200), new Vector2(0.5f, 1));
-            title.characterSpacing = 18;
-            var sub = UIFactory.Text(scr, "Subtitulo", "Comanda una base en el polo sur de la Luna", 34, new Color(0.85f, 0.90f, 1f), TextAlignmentOptions.Center);
-            sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -290), new Vector2(1200, 50), new Vector2(0.5f, 1));
-
-            var col = UIFactory.Rect(scr, "Botones").Place(new Vector2(0.5f, 0.5f), new Vector2(0, -60), new Vector2(520, 560));
-            UIFactory.VStack(col.gameObject, 16);
-            MenuButton(col, "NUEVA PARTIDA", Theme.Accent, Color.white, ShowSetup);
-            continueButton = MenuButton(col, "CONTINUAR", Theme.Panel, Theme.Ink, () => { if (!G.ContinueGame()) Toast("No hay una partida guardada válida.", NoticeKind.Warning); });
-            MenuButton(col, "CIENCIA REAL", Theme.Panel, Theme.Ink, () => ShowScienceScreen(null));
-            MenuButton(col, "OPCIONES", Theme.Panel, Theme.Ink, ShowOptions);
-            MenuButton(col, "CRÉDITOS", Theme.Panel, Theme.Ink, () => ShowOnly(creditsScreen));
+                startChoice.gameObject.SetActive(false);
+                if (!G.ContinueGame()) Toast("No hay una partida guardada válida.", NoticeKind.Warning);
+            }), 96);
+            UIFactory.Size(UIFactory.Button(stack, "Nueva", "NUEVA PARTIDA", Color.white, MenuInk, 36, () => { startChoice.gameObject.SetActive(false); ShowSetup(); }), 96);
+            UIFactory.Size(UIFactory.Button(stack, "Volver", "VOLVER", Theme.OffGray, MenuInk, 28, () => startChoice.gameObject.SetActive(false)), 76);
+            startChoice.gameObject.SetActive(false);
             return scr;
         }
 
-        Button MenuButton(Transform parent, string label, Color bg, Color fg, UnityEngine.Events.UnityAction onClick)
+        /// <summary>Botón con su sprite original. El sprite "boton seleccionado universal" está vacío, así que
+        /// el estado seleccionado se muestra aclarando el mismo botón (como en la captura de referencia).</summary>
+        void MenuArtButton(RectTransform parent, Sprite sprite, Vector2 pos, string label, UnityEngine.Events.UnityAction onClick)
         {
-            var b = UIFactory.Button(parent, label, label, bg, fg, 32, onClick);
-            UIFactory.Size(b, 88);
-            return b;
+            var img = UIFactory.Image(parent, "Boton" + label, Color.white, sprite, true);
+            img.rectTransform.TopLeft(pos, sprite != null ? sprite.rect.size : new Vector2(401, 109));
+            var b = img.gameObject.AddComponent<Button>();
+            b.targetGraphic = img;
+            var colors = b.colors;
+            colors.normalColor = new Color(0.88f, 0.88f, 0.88f);
+            colors.highlightedColor = Color.white;
+            colors.selectedColor = Color.white;
+            colors.pressedColor = new Color(0.75f, 0.75f, 0.75f);
+            b.colors = colors;
+            b.onClick.AddListener(onClick);
+            var t = UIFactory.Text(img.transform, "Texto", label, 44, MenuInk, TextAlignmentOptions.Center, FontStyles.Bold);
+            t.rectTransform.Stretch(8, 4, 8, 4);
+        }
+
+        void OpenStart()
+        {
+            if (G.saves.HasSave) { startChoice.gameObject.SetActive(true); startChoice.SetAsLastSibling(); }
+            else ShowSetup();
+        }
+
+        static void Quit()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
 
         public void ShowMenu()
         {
             CloseAllModals();
             ShowOnly(menuScreen);
-            continueButton.interactable = G.saves.HasSave;
+            if (startChoice != null) startChoice.gameObject.SetActive(false);
         }
 
         // ------------------------------------------------------------------ Nueva partida
@@ -76,6 +107,7 @@ namespace Crater.UI
         RectTransform BuildSetup()
         {
             var scr = UIFactory.Rect(screensLayer, "Configuracion").Stretch();
+            MenuBackdrop(scr);
             var card = UIFactory.Panel(scr, "Tarjeta", Theme.Panel);
             card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1240, 900));
             var t = UIFactory.Text(card.transform, "Titulo", "NUEVA MISIÓN", 52, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
@@ -152,7 +184,7 @@ namespace Crater.UI
 
         static void Select(Button b, bool on)
         {
-            b.GetComponent<Image>().color = on ? Theme.Accent : Theme.PanelSoft;
+            b.GetComponent<Image>().color = UIFactory.ArtPanel != null ? UIFactory.ArtTint(on ? Theme.Accent : Theme.PanelSoft) : (on ? Theme.Accent : Theme.PanelSoft);
             b.Label().color = on ? Color.white : Theme.Ink;
         }
 
@@ -179,6 +211,7 @@ namespace Crater.UI
         RectTransform BuildOptions()
         {
             var scr = UIFactory.Rect(screensLayer, "Opciones").Stretch();
+            MenuBackdrop(scr);
             var card = UIFactory.Panel(scr, "Tarjeta", Theme.Panel);
             card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100, 760));
             var t = UIFactory.Text(card.transform, "Titulo", "OPCIONES", 52, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
@@ -235,6 +268,7 @@ namespace Crater.UI
         RectTransform BuildCredits()
         {
             var scr = UIFactory.Rect(screensLayer, "Creditos").Stretch();
+            MenuBackdrop(scr);
             var card = UIFactory.Panel(scr, "Tarjeta", Theme.Panel);
             card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1200, 860));
             var t = UIFactory.Text(card.transform, "Titulo", "CRÉDITOS", 52, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
@@ -249,12 +283,15 @@ namespace Crater.UI
                 "Estudios de NASA sobre habitabilidad y salud de astronautas: análogo HERA y misiones de la ISS.\n" +
                 "NASA Lunar Reconnaissance Orbiter (eclipse de marzo de 2025) y NASA Moon Trek (terreno lunar).\n" +
                 "Canadian Space Agency: Deep Space Food Challenge y sistema CANGrow.\n\n" +
-                "NASA y la CSA no respaldan este juego. Más detalles en CIENCIA REAL (menú principal).\n\n" +
-                "<b>Tecnología</b>\nUnity, TextMeshPro. Fuente Liberation Sans (licencia SIL OFL).",
+                "NASA y la CSA no respaldan este juego. Más detalles en CIENCIA REAL.\n\n" +
+                "<b>Arte</b>: sprites originales del equipo CRATER.\n" +
+                "<b>Tecnología</b>: Unity, TextMeshPro. Fuente Liberation Sans (licencia SIL OFL).",
                 26, Theme.Ink);
             text.rectTransform.Stretch(70, 130, 70, 120);
             var back = UIFactory.Button(card.transform, "Volver", "VOLVER", Theme.Accent, Color.white, 28, ShowMenu);
-            ((RectTransform)back.transform).Place(new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(300, 76), new Vector2(0.5f, 0));
+            ((RectTransform)back.transform).Place(new Vector2(0.5f, 0), new Vector2(-180, 30), new Vector2(300, 76), new Vector2(0.5f, 0));
+            var science = UIFactory.Button(card.transform, "Ciencia", "CIENCIA REAL", Color.white, Theme.Ink, 28, () => ShowScienceScreen(null));
+            ((RectTransform)science.transform).Place(new Vector2(0.5f, 0), new Vector2(180, 30), new Vector2(300, 76), new Vector2(0.5f, 0));
             return scr;
         }
 
@@ -264,16 +301,14 @@ namespace Crater.UI
         {
             ShowOnly(scienceScreen);
             UIFactory.Clear(scienceScreen);
+            MenuBackdrop(scienceScreen);
             var card = UIFactory.Panel(scienceScreen, "Tarjeta", Theme.Panel);
             card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1700, 960));
             var t = UIFactory.Text(card.transform, "Titulo", "CIENCIA REAL", 48, Theme.Ink, TextAlignmentOptions.Left, FontStyles.Bold);
             t.rectTransform.Place(new Vector2(0, 1), new Vector2(50, -24), new Vector2(800, 64), new Vector2(0, 1));
             var area = UIFactory.Rect(card.transform, "Area").Stretch(40, 120, 40, 100);
             BuildScienceBrowser(area, id);
-            var back = UIFactory.Button(card.transform, "Volver", "VOLVER", Theme.Accent, Color.white, 28, () =>
-            {
-                ShowMenu();
-            });
+            var back = UIFactory.Button(card.transform, "Volver", "VOLVER", Theme.Accent, Color.white, 28, () => ShowOnly(creditsScreen));
             ((RectTransform)back.transform).Place(new Vector2(0.5f, 0), new Vector2(0, 26), new Vector2(300, 72), new Vector2(0.5f, 0));
         }
 
@@ -352,6 +387,7 @@ namespace Crater.UI
             CloseAllModals();
             ShowOnly(endScreen);
             UIFactory.Clear(endScreen);
+            MenuBackdrop(endScreen);
             var s = G.State;
             bool win = outcome == Outcome.Victory;
             int survived = win ? s.totalTurns : Mathf.Max(0, s.day - 1);

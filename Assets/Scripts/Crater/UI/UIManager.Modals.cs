@@ -16,10 +16,23 @@ namespace Crater.UI
         /// <summary>Ventana centrada con fondo oscurecido y encabezado de color con ilustración.</summary>
         RectTransform Modal(string title, Color header, Vector2 size, out RectTransform content, Transform layer = null, CraterEventType? illustration = null, Sprite image = null)
         {
-            var overlay = UIFactory.Image(layer ?? modalLayer, "Ventana_" + title, new Color(0.02f, 0.04f, 0.12f, 0.65f), null, true).rectTransform;
+            bool artUI = UIFactory.ArtPanel != null;
+            // Con el arte original el fondo se oscurece poco: la base muestra la variante del evento detrás.
+            var overlay = UIFactory.Image(layer ?? modalLayer, "Ventana_" + title, new Color(0.02f, 0.04f, 0.12f, artUI ? 0.35f : 0.65f), null, true).rectTransform;
             overlay.Stretch();
             var cardImg = UIFactory.Panel(overlay, "Tarjeta", Theme.Panel);
-            cardImg.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, size);
+            cardImg.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0, artUI ? -60 : 0), size);
+            if (artUI)
+            {
+                var artBox = UIFactory.Rect(cardImg.transform, "Ilustracion").Place(new Vector2(0, 1), new Vector2(36, -40), new Vector2(110, 110), new Vector2(0, 1));
+                bool hasArt = DrawArtIllustration(artBox, illustration, image);
+                var tt = UIFactory.Text(cardImg.transform, "Titulo", title, 52, new Color(0.25f, 0.15f, 0.02f), TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+                tt.rectTransform.anchorMin = new Vector2(0, 1); tt.rectTransform.anchorMax = new Vector2(1, 1);
+                tt.rectTransform.pivot = new Vector2(0.5f, 1);
+                tt.rectTransform.offsetMin = new Vector2(hasArt ? 166 : 40, -150); tt.rectTransform.offsetMax = new Vector2(-30, -36);
+                content = UIFactory.Rect(cardImg.transform, "Contenido").Stretch(40, 30, 40, 160);
+                return overlay;
+            }
             var head = UIFactory.Panel(cardImg.transform, "Encabezado", header, false);
             head.rectTransform.anchorMin = new Vector2(0, 1); head.rectTransform.anchorMax = new Vector2(1, 1);
             head.rectTransform.pivot = new Vector2(0.5f, 1);
@@ -30,6 +43,27 @@ namespace Crater.UI
             t.rectTransform.Stretch(160, 4, 24, 4);
             content = UIFactory.Rect(cardImg.transform, "Contenido").Stretch(32, 24, 32, 148);
             return overlay;
+        }
+
+        /// <summary>Ilustración con arte original: EventData.image o, para el eclipse, el Sol y la Tierra del equipo.</summary>
+        bool DrawArtIllustration(RectTransform box, CraterEventType? type, Sprite image)
+        {
+            if (image != null)
+            {
+                var img = UIFactory.Image(box, "Imagen", Color.white, image);
+                img.preserveAspect = true;
+                img.rectTransform.Stretch();
+                return true;
+            }
+            if (type == CraterEventType.EarthShadow && art.eclipseSun != null && art.eclipseEarth != null)
+            {
+                var sunImg = UIFactory.Image(box, "Sol", Color.white, art.eclipseSun);
+                sunImg.rectTransform.Stretch();
+                var earthImg = UIFactory.Image(box, "Tierra", Color.white, art.eclipseEarth);
+                earthImg.rectTransform.Stretch(6, 6, 6, 6);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>Ilustración del evento: el sprite de EventData.image o un dibujo simple de placeholder.</summary>
@@ -97,13 +131,13 @@ namespace Crater.UI
         {
             if (eventOverlay != null) Destroy(eventOverlay.gameObject);
             eventOverlay = null;
-            CloseBuildingCard();
+            CloseBuildingCard(true);
             RefreshGame();
             if (p == null) return;
 
             bool eclipse = p.kind == PromptKind.EclipseAllocation;
             bool four = p.options.Count >= 4;
-            var size = new Vector2(1180, eclipse ? 860 : four ? 800 : p.kind == PromptKind.Info ? 540 : 640);
+            var size = new Vector2(1180, eclipse ? (UIFactory.ArtPanel != null ? 780 : 860) : four ? 800 : p.kind == PromptKind.Info ? 540 : 640);
             eventOverlay = Modal(p.title, p.color * 0.85f + Color.black * 0.15f, size, out var content, null, p.eventType, p.image);
 
             var v = UIFactory.VStack(content.gameObject, 12);
@@ -138,6 +172,7 @@ namespace Crater.UI
                 b.interactable = o.enabled;
                 if (info) continue;
                 var outline = UIFactory.Image(b.transform, "Borde", p.color, SpriteFactory.RoundedOutline);
+                outline.enabled = UIFactory.ArtPanel == null;
                 outline.rectTransform.Stretch();
                 var lbl = b.Label();
                 lbl.rectTransform.Stretch(22, 12, 22, 12);
@@ -202,7 +237,11 @@ namespace Crater.UI
                                         "Usa " + c.eclipseSectionCost[i] + " batería" + (c.eclipseSectionCost[i] > 1 ? "s" : "") + "\n\n" +
                                         (powered[i] ? UIFactory.Colored("<b>ENCENDIDO</b>", Theme.Good) + "\n" + EclipseRules.Consequence(sec, true, c)
                                                     : UIFactory.Colored("<b>APAGADO</b>", Theme.Bad) + "\n" + EclipseRules.Consequence(sec, false, c));
+                    if (UIFactory.ArtPanel != null) cards[i].bg.color = UIFactory.ArtTint(powered[i] ? Theme.Good : Theme.OffGray);
                 }
+                // La base muestra en vivo qué edificios quedarían encendidos (variantes "encendidos" del eclipse).
+                baseView.PreviewEclipse((bool[])powered.Clone());
+                baseView.SetState(G.State, G.turns.Projection());
             }
 
             for (int i = 0; i < 4; i++)
@@ -280,7 +319,7 @@ namespace Crater.UI
             {
                 case 1: return (RectTransform)indicators[0].transform.parent;
                 case 2: return baseView.buildings[(int)BuildingId.Solar].Rect;
-                case 3: return (RectTransform)baseView.transform;
+                case 3: return baseView.buildings[(int)BuildingId.Recycler].Rect;
                 case 4: return (RectTransform)endDayButton.transform;
                 default: return null;
             }

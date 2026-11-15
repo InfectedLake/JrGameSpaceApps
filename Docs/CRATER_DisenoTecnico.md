@@ -178,3 +178,40 @@ Conclusiones:
 - Ninguna alternativa de los eventos menores es siempre mejor.
 
 **Misión corta (16 días):** las reservas iniciales alcanzan para casi todo (todo encendido gana el 99.6%), así que en la configuración se presenta como "Corta (fácil)". No se cambiaron las duraciones.
+
+## Integración del arte original (15-nov-2026)
+
+Reemplaza los dibujos provisionales del juego. Los archivos de `Assets/Sprites` **no se modificaron**; solo se cambió su configuración de importación (`.meta`).
+
+### Importación (49 sprites, sin incluir las 8 capturas "ejemplo…", que solo son referencia)
+
+Filter Mode Point, sin compresión, sin mipmaps, Sprite Mode Single, Mesh Type Full Rect, Wrap Clamp, Max Size 4096 (el fondo mide 2146 px y el filtro del eclipse 3003 px, así que con 2048 Unity los reducía) y Read/Write activado (para que solo los píxeles opacos de los edificios reciban clics). `fondo menu.png` tiene un borde 9-slice de 6/6/6/29 px.
+
+### Composición
+
+Las posiciones se midieron comparando píxel a píxel cada sprite con las capturas de referencia; están en `UI/CraterLayout.cs`. La captura de gameplay es la composición a escala 0.5, y la vista del juego es la ventana de 1920 × 1080 del fondo que empieza en (184, 636): a 1920 × 1080, 1 píxel de arte equivale a 1 píxel de pantalla. La reconstrucción con estas coordenadas difiere de la referencia en 17/255 de media, sobre todo por el reescalado.
+
+- **Orden de capas** (hermanos de uGUI, verificado contra la referencia): fondo → energía → agua y comida (incluye explanada y tanque) → rover → núcleo → oxígeno → vivienda. Las capas de cada evento son hijas de su edificio.
+- **Variantes:** un solo objeto por edificio. Cambia el sprite de la misma Image (encendida en el eclipse, energía rota por micrometeoritos) o activa su capa (agua / polvo). La zona clicable y la lógica no cambian.
+- **Tormenta solar:** con paredes de agua se activan las capas de agua; con regolito (o con el refugio listo), las de polvo. El núcleo y el tanque quedan sin capa, como en la referencia.
+- **Eclipse:** filtro de oscurecimiento, Sol y Tierra arriba al centro, durante el aviso y el día del eclipse. Brilla el edificio de cada sección con baterías, con vista previa en vivo mientras se reparten. El núcleo nunca se enciende.
+- **Micrometeoritos:** "meteoritos de fondo" durante la alerta y ese día. La energía usa "edificio energia roto" mientras los paneles estén averiados.
+- **Cámara:** al tocar un edificio, la cámara se acerca ×2 en 0.45 s (con suavizado). Recién después aparece el panel, en la posición de la captura de selección, y al cerrarlo vuelve a la vista general. No se puede seleccionar otro edificio mientras dura el movimiento ni con el panel abierto. La cámara nunca sale de la zona pintada del fondo.
+- **HUD:** barra superior original con las casillas Comida (agua y comida), Energía, Oxígeno y Salud (icono vivienda), el menú (hamburguesa), el recuadro de días y el botón ▶▶ de terminar el día.
+- **Menú principal:** fondo, letrero del título y los botones INICIO, OPCIONES, CRÉDITOS y SALIR. CIENCIA REAL está dentro de CRÉDITOS. Todos los paneles y botones de los demás menús y ventanas usan "fondo menu" con 9-slice.
+
+### Pendiente de arte (no se inventó ningún sustituto)
+
+| Falta | Situación actual |
+|---|---|
+| **Rover** (normal y roto): la carpeta no tiene ningún sprite de rover | Marcador temporal en la posición indicada por el README, junto al tanque de agua. Basta asignar `rover` / `roverBroken` en `ArtSet.asset`. |
+| `panel de informacion de edificio.png` | El archivo está vacío (todos los píxeles transparentes). Se usa "fondo menu", que tiene el mismo naranja que el panel de la captura. |
+| `boton seleccionado universal.png` | También está vacío. El botón seleccionado se aclara. |
+| Cráteres sobre la explanada del agua (captura de micrometeoritos) | No hay sprite para ese efecto. |
+| Estados apagado / sin energía fuera del eclipse | No hay variantes: se aplica un tinte a la Image (gris si está apagado, rojo intermitente si no tiene energía). Como el tanque está dentro del sprite de agua y comida, también se tiñe. |
+
+**Decisiones a revisar con el equipo:**
+- La casilla de recurso "vivienda" muestra la **Salud** de la tripulación (el juego no tiene un recurso "vivienda").
+- En el eclipse, la sección "Monitoreo y comunicaciones" ilumina la **vivienda**, porque es el único edificio restante con variante encendida.
+
+Si se cambian o renombran sprites: **CRATER > Asignar arte original** vuelve a enlazar `ArtSet.asset` por ruta y lo asigna al UIManager.
