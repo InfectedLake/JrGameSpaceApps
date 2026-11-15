@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0cdcfc919d105a45873f3d9a706e11b, type: 3}
+  m_Name: dosis
+  m_EditorClassIdentifier: Crater::Crater.Data.ScienceData
+  id: dosis
+  title: Dosis acumulada
+  explanation: "La radiaci\xF3n es un riesgo que se va sumando con el tiempo: cada
+    d\xEDa en la Luna suma un poquito. Por eso los cient\xEDficos llevan la cuenta
+    de la dosis total que recibe cada astronauta."
+  fact: "El valor de fondo que suma el juego cada d\xEDa (1.369 mSv) corresponde
+    al promedio diario medido por LND en la superficie lunar."
+  factTag: 0
+  source: Mediciones del instrumento LND (NASA RadLab)
+  gameNote: "La dosis extra de cada tormenta y la idea de que el da\xF1o ocurre de
+    golpe son simplificaciones del juego. El juego no fija ning\xFAn l\xEDmite m\xE9dico."
+  illustration: {fileID: 0}

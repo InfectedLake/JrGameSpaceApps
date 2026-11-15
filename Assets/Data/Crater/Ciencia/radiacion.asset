@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0cdcfc919d105a45873f3d9a706e11b, type: 3}
+  m_Name: radiacion
+  m_EditorClassIdentifier: Crater::Crater.Data.ScienceData
+  id: radiacion
+  title: "\xBFQu\xE9 es la radiaci\xF3n solar?"
+  explanation: "El Sol puede lanzar part\xEDculas muy r\xE1pidas que viajan por el
+    espacio. Cuando llegan a la Luna pueden ser peligrosas para los astronautas y
+    para los aparatos electr\xF3nicos. La Luna no tiene un aire grueso ni un campo
+    magn\xE9tico como la Tierra que la proteja."
+  fact: "La superficie lunar recibe m\xE1s radiaci\xF3n que el interior de la Estaci\xF3n
+    Espacial Internacional: el instrumento LND midi\xF3 en promedio unos 1,369 \xB5Sv
+    por d\xEDa en la superficie lunar, frente a 731 \xB5Sv por d\xEDa en la ISS durante
+    el periodo citado."
+  factTag: 0
+  source: "NASA RadLab; mediciones del instrumento LND en la superficie lunar y CRaTER
+    en \xF3rbita lunar"
+  gameNote: "El da\xF1o que recibe la vivienda se calcula con una f\xF3rmula simplificada:
+    Intensidad \xD7 12 \xD7 (1 \u2212 Bloqueo). Los niveles de intensidad 1, 2 y
+    3 son una abstracci\xF3n del juego, no una escala cient\xEDfica oficial."
+  illustration: {fileID: 0}

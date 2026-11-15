@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0cdcfc919d105a45873f3d9a706e11b, type: 3}
+  m_Name: regolito
+  m_EditorClassIdentifier: Crater::Crater.Data.ScienceData
+  id: regolito
+  title: "\xBFQu\xE9 es el regolito?"
+  explanation: "Es el polvo y las piedritas sueltas que cubren la superficie lunar.
+    Se puede amontonar sobre una base para protegerla de la radiaci\xF3n y de los
+    cambios de temperatura."
+  fact: "El concepto ARMOR contempla espesores cercanos a tres metros de regolito
+    para ciertos escenarios de blindaje. Una capa insuficiente puede producir radiaci\xF3n
+    secundaria."
+  factTag: 0
+  source: "Estudios de blindaje con regolito, concepto ARMOR (documento de investigaci\xF3n
+    de CRATER)"
+  gameNote: "El bloqueo del 70%, los 2 d\xEDas de construcci\xF3n y el aumento de
+    hasta 15% de la dosis con una capa delgada son valores del juego, no una regla
+    universal."
+  illustration: {fileID: 0}
