@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff284ba5585cd7545907b423fe8c27b1, type: 3}
+  m_Name: Invernadero
+  m_EditorClassIdentifier: Crater::Crater.Data.BuildingData
+  stats:
+    id: 1
+    name: "Invernadero"
+    energy: -12
+    oxygen: 2
+    food: 8
+    water: -2
+    priority: 2
+    startsOn: 1
+    essential: 0
+  description: "Cultiva plantas para alimentar a la tripulación. También da un poco de oxígeno."
+  howItWorks: "Necesita agua: con poca agua las plantas crecen menos."
+  scienceId: cultivos
+  icon: {fileID: 0}
+  color: {r: 0.38, g: 0.8, b: 0.45, a: 1}

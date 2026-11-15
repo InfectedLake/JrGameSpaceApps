@@ -1,0 +1,123 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53a9224caa60da04e881f9a3e4cc18d5, type: 3}
+  m_Name: GameBalance
+  m_EditorClassIdentifier: Crater::Crater.Data.GameBalanceData
+  config:
+    startEnergy: 100
+    startOxygen: 50
+    startFood: 50
+    startHealth: 100
+    astronauts: 3
+    startWater: 50
+    startHabitat: 70
+    startBatteries: 4
+    maxBatteries: 4
+    resourceMax: 100
+    alertThreshold: 25
+    oxygenPerAstronaut: 2
+    foodPerAstronaut: 2
+    starvingHealthLoss: 20
+    buildings:
+    - id: 0
+      name: Panel solar
+      energy: 23
+      oxygen: 0
+      food: 0
+      water: 0
+      priority: 0
+      startsOn: 1
+      essential: 1
+    - id: 1
+      name: Invernadero
+      energy: -12
+      oxygen: 2
+      food: 8
+      water: -2
+      priority: 2
+      startsOn: 1
+      essential: 1
+    - id: 2
+      name: Reciclador de aire
+      energy: -22
+      oxygen: 10
+      food: 0
+      water: -4
+      priority: 1
+      startsOn: 1
+      essential: 1
+    - id: 3
+      name: Vivienda
+      energy: -5
+      oxygen: 0
+      food: 0
+      water: 0
+      priority: 3
+      startsOn: 1
+      essential: 1
+    lowWaterThreshold: 20
+    lowWaterFoodPenalty: 0.3
+    roverIcePerTurn: 6
+    lowHabitatThreshold: 25
+    lowHabitatHealthLoss: 5
+    healthRecovery: 2
+    healthRecoveryHabitatMin: 50
+    cycles: 6
+    turnsPerCycle: 4
+    moraleCycle: 4
+    moraleHabitatLoss: 10
+    habitatUpkeepGain: 2
+    habitatOffHealthLoss: 3
+    emergencyBatteryEnergy: 20
+    batteryRechargePerTurn: 1
+    radiationDamagePerIntensity: 12
+    waterBlockWarned: 0.8
+    waterBlockUnwarned: 0.2
+    regolithBlock: 0.7
+    regolithThinPenalty: 0.15
+    bunkerBlock: 0.5
+    waterWallWater: 30
+    waterWallOxygenFactor: 0.5
+    regolithEnergy: 25
+    regolithTurns: 2
+    regolithHabitatBonus: 10
+    bunkerHabitat: 15
+    bunkerOxygen: 8
+    bunkerWater: 8
+    bunkerFood: 8
+    radiationWarningLead: 2
+    intensityChances:
+    - 0.5
+    - 0.35
+    - 0.15
+    backgroundDosePerTurn: 1.369
+    stormDosePerIntensity: 10
+    meteorBreakChance: 0.3
+    meteorWarningLead: 1
+    stowPanelsEnergy: 20
+    stowRoversWater: 15
+    stowRoversOxygen: 10
+    repairNowEnergy: 20
+    repairNowWater: 10
+    slowRepairTurns: 2
+    brokenCapacity: 50
+    eclipseWarningLead: 1
+    eclipseSectionCost: 02000000010000000100000001000000
+    eclipseOxygenLoss: 25
+    eclipseFoodPenalty: 0.3
+    eclipseFoodPenaltyTurns: 2
+    eclipseEnergyOverhead: 0.2
+    eclipseEnergyOverheadTurns: 2
+    maxEclipses: 2
+    extraRadiationChance: 0.4
+    extraMeteorChance: 0.35
+    extraEclipseChance: 0.25

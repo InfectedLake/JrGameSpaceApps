@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff284ba5585cd7545907b423fe8c27b1, type: 3}
+  m_Name: Vivienda
+  m_EditorClassIdentifier: Crater::Crater.Data.BuildingData
+  stats:
+    id: 3
+    name: "Vivienda"
+    energy: -5
+    oxygen: 0
+    food: 0
+    water: 0
+    priority: 3
+    startsOn: 1
+    essential: 1
+  description: "El hogar de la tripulación: aire cálido, luz y camas para descansar."
+  howItWorks: "Si la apagas, la vivienda se deteriora y la tripulación descansa mal."
+  scienceId: animo
+  icon: {fileID: 0}
+  color: {r: 0.95, g: 0.8, b: 0.35, a: 1}

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0cdcfc919d105a45873f3d9a706e11b, type: 3}
+  m_Name: noche_lunar
+  m_EditorClassIdentifier: Crater::Crater.Data.ScienceData
+  id: noche_lunar
+  title: La noche lunar
+  explanation: "Un d\xEDa completo en la Luna dura casi un mes terrestre. Por eso
+    la noche lunar es muy larga."
+  fact: "En el ecuador lunar la noche dura alrededor de 14 d\xEDas. En las regiones
+    polares puede haber periodos de oscuridad intermitente de hasta unas 100 horas."
+  factTag: 0
+  source: "NASA (documento de investigaci\xF3n de CRATER)"
+  gameNote: "La noche lunar completa est\xE1 reservada para un posible modo avanzado."
+  illustration: {fileID: 0}

@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18b13105f4de75e4ab012d550c67f52f, type: 3}
+  m_Name: RadiacionSolar
+  m_EditorClassIdentifier: Crater::Crater.Data.EventData
+  type: 0
+  title: "¡Alerta solar!"
+  description: "¡La tormenta solar llegó a la base!"
+  warningText: "Una tormenta se aproxima. ¿Cómo protegerás a tu tripulación?"
+  educationalMessage: "El agua y la tierra lunar ayudan a frenar la radiación."
+  scienceId: radiacion
+  source: "NASA DONKI (CCMC); NASA RadLab; estudios de blindaje"
+  image: {fileID: 0}
+  color: {r: 1, g: 0.7, b: 0.2, a: 1}
+  options:
+  - title: "Paredes de agua"
+    description: "Llenamos las paredes con agua."
+    tag: 1
+  - title: "Refugio de regolito"
+    description: "El rover cubre la vivienda con tierra lunar."
+    tag: 1
+  - title: "Refugio interior"
+    description: "La tripulación se encierra en la vivienda."
+    tag: 1
+  - title: "Sin protección"
+    description: "No gastamos nada, pero quedamos expuestos."
+    tag: 1

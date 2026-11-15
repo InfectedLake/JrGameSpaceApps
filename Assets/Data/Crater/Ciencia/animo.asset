@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0cdcfc919d105a45873f3d9a706e11b, type: 3}
+  m_Name: animo
+  m_EditorClassIdentifier: Crater::Crater.Data.ScienceData
+  id: animo
+  title: "Cansancio y estr\xE9s"
+  explanation: "Vivir mucho tiempo en un lugar peque\xF1o y lejos de casa cansa.
+    Dormir bien y tomar descansos ayuda a la tripulaci\xF3n a sentirse mejor."
+  fact: "NASA estudia el comportamiento y la salud de las tripulaciones en el an\xE1logo
+    HERA y en las misiones de larga duraci\xF3n de la ISS."
+  factTag: 0
+  source: NASA - HERA y estudios de misiones de la ISS
+  gameNote: "La ca\xEDda de 10 puntos de Vivienda en el ciclo 4 es una simplificaci\xF3n
+    del juego."
+  illustration: {fileID: 0}

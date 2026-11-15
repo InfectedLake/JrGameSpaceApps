@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0cdcfc919d105a45873f3d9a706e11b, type: 3}
+  m_Name: donki
+  m_EditorClassIdentifier: Crater::Crater.Data.ScienceData
+  id: donki
+  title: NASA DONKI
+  explanation: "DONKI es una base de datos de NASA que registra el \"clima espacial\":
+    llamaradas solares, eyecciones de masa coronal, part\xEDculas solares energ\xE9ticas
+    y tormentas geomagn\xE9ticas. Gracias al monitoreo, una tormenta puede detectarse
+    antes de que llegue."
+  fact: "DONKI registra llamaradas (FLR), eyecciones de masa coronal (CME), part\xEDculas
+    energ\xE9ticas (SEP) y tormentas geomagn\xE9ticas (GST)."
+  factTag: 0
+  source: NASA DONKI - Community Coordinated Modeling Center (CCMC)
+  gameNote: "El juego convierte la clase de una llamarada real en intensidad: clase
+    X = 3, clase M = 2, otras = 1. Esa conversi\xF3n es del juego. Las fechas de
+    los registros no predicen cu\xE1ndo llegar\xEDa una tormenta a la base."
+  illustration: {fileID: 0}

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18b13105f4de75e4ab012d550c67f52f, type: 3}
+  m_Name: Micrometeoritos
+  m_EditorClassIdentifier: Crater::Crater.Data.EventData
+  type: 1
+  title: "¡Micrometeoritos!"
+  description: "Pequeñas rocas espaciales golpean el exterior de la base."
+  warningText: "El equipo exterior está en peligro. ¿Qué protegerás?"
+  educationalMessage: "Dentro de la base estás protegido. Los equipos de afuera, no."
+  scienceId: micrometeoritos
+  source: "Modelo de impactos de NASA (documento de investigación de CRATER)"
+  image: {fileID: 0}
+  color: {r: 0.95, g: 0.5, b: 0.3, a: 1}
+  options:
+  - title: "Proteger los paneles solares"
+    description: "Los rovers quedan afuera."
+    tag: 1
+  - title: "Proteger los rovers"
+    description: "Los paneles quedan afuera."
+    tag: 1

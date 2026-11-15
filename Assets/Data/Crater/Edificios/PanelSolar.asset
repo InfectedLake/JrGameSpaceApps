@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff284ba5585cd7545907b423fe8c27b1, type: 3}
+  m_Name: PanelSolar
+  m_EditorClassIdentifier: Crater::Crater.Data.BuildingData
+  stats:
+    id: 0
+    name: "Planta de energía"
+    energy: 23
+    oxygen: 0
+    food: 0
+    water: 0
+    priority: 0
+    startsOn: 1
+    essential: 1
+  description: "Convierte la luz del Sol en electricidad para toda la base."
+  howItWorks: "Si se daña produce menos. Durante un eclipse no produce nada."
+  scienceId: solar
+  icon: {fileID: 0}
+  color: {r: 0.35, g: 0.62, b: 0.95, a: 1}

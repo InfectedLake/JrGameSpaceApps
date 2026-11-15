@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0cdcfc919d105a45873f3d9a706e11b, type: 3}
+  m_Name: micrometeoritos
+  m_EditorClassIdentifier: Crater::Crater.Data.ScienceData
+  id: micrometeoritos
+  title: Micrometeoritos
+  explanation: "Son granitos de roca del espacio, m\xE1s peque\xF1os que un grano
+    de arena, que viajan rapid\xEDsimo. En la Luna no hay aire que los frene, as\xED
+    que golpean directamente el suelo y los equipos."
+  fact: "Un modelo de NASA estim\xF3 hasta unos 23,000 impactos al a\xF1o para una
+    base del tama\xF1o de la ISS en el ecuador lunar (cara oculta). Una base blindada
+    tendr\xEDa entre 0.024 y 0.037 impactos al a\xF1o, con m\xEDnimos en las regiones
+    polares."
+  factTag: 0
+  source: "Modelo de NASA de impactos de micrometeoritos (documento de investigaci\xF3n
+    de CRATER)"
+  gameNote: "No existe una API que anticipe estos impactos: en el juego el evento
+    es aleatorio. El aviso de un d\xEDa y la probabilidad de aver\xEDa del 30% son
+    abstracciones del juego."
+  illustration: {fileID: 0}

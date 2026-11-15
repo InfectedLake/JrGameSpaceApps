@@ -1,0 +1,390 @@
+﻿{
+    "id":  "2017-09",
+    "title":  "Actividad solar de septiembre de 2017",
+    "startDate":  "2017-09-01",
+    "endDate":  "2017-09-30",
+    "source":  "NASA DONKI - CCMC (https://ccmc.gsfc.nasa.gov/DONKI-API/get/)",
+    "retrieved":  "2026-11-15",
+    "flares":  [
+                   {
+                       "flrID":  "2017-09-02T15:23:00-FLR-001",
+                       "beginTime":  "2017-09-02T15:23Z",
+                       "peakTime":  "2017-09-02T15:41Z",
+                       "classType":  "C7.7",
+                       "sourceLocation":  "N05W90",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12965/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-04T05:36:00-FLR-001",
+                       "beginTime":  "2017-09-04T05:36Z",
+                       "peakTime":  "2017-09-04T05:49Z",
+                       "classType":  "M1.2",
+                       "sourceLocation":  "S10W05",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12974/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-04T15:11:00-FLR-001",
+                       "beginTime":  "2017-09-04T15:11Z",
+                       "peakTime":  "2017-09-04T15:30Z",
+                       "classType":  "M1.5",
+                       "sourceLocation":  "S10W08",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12975/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-04T18:05:00-FLR-001",
+                       "beginTime":  "2017-09-04T18:05Z",
+                       "peakTime":  "2017-09-04T18:22Z",
+                       "classType":  "M1.0",
+                       "sourceLocation":  "S10W12",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12976/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-04T18:46:00-FLR-001",
+                       "beginTime":  "2017-09-04T18:46Z",
+                       "peakTime":  "2017-09-04T19:37Z",
+                       "classType":  "M1.7",
+                       "sourceLocation":  "S10W13",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12977/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-04T19:59:00-FLR-001",
+                       "beginTime":  "2017-09-04T19:59Z",
+                       "peakTime":  "2017-09-04T20:02Z",
+                       "classType":  "M1.5",
+                       "sourceLocation":  "S10W14",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12981/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-04T20:15:00-FLR-001",
+                       "beginTime":  "2017-09-04T20:15Z",
+                       "peakTime":  "2017-09-04T20:33Z",
+                       "classType":  "M5.5",
+                       "sourceLocation":  "S10W14",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12979/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-04T22:10:00-FLR-001",
+                       "beginTime":  "2017-09-04T22:10Z",
+                       "peakTime":  "2017-09-04T22:14Z",
+                       "classType":  "M2.1",
+                       "sourceLocation":  "S09W12",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13021/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-05T01:04:00-FLR-001",
+                       "beginTime":  "2017-09-05T01:04Z",
+                       "peakTime":  "2017-09-05T01:08Z",
+                       "classType":  "M4.2",
+                       "sourceLocation":  "S08W20",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12992/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-05T03:42:00-FLR-001",
+                       "beginTime":  "2017-09-05T03:42Z",
+                       "peakTime":  "2017-09-05T03:51Z",
+                       "classType":  "M1.0",
+                       "sourceLocation":  "S09W20",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12999/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-05T04:33:00-FLR-001",
+                       "beginTime":  "2017-09-05T04:33Z",
+                       "peakTime":  "2017-09-05T04:53Z",
+                       "classType":  "M3.2",
+                       "sourceLocation":  "S08W20",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12993/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-05T06:34:00-FLR-001",
+                       "beginTime":  "2017-09-05T06:34Z",
+                       "peakTime":  "2017-09-05T06:40Z",
+                       "classType":  "M3.8",
+                       "sourceLocation":  "S08W20",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12994/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-05T17:37:00-FLR-001",
+                       "beginTime":  "2017-09-05T17:37Z",
+                       "peakTime":  "2017-09-05T17:43Z",
+                       "classType":  "M2.3",
+                       "sourceLocation":  "S09W20",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12998/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-06T08:57:00-FLR-001",
+                       "beginTime":  "2017-09-06T08:57Z",
+                       "peakTime":  "2017-09-06T09:10Z",
+                       "classType":  "X2.2",
+                       "sourceLocation":  "S07W33",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13007/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-06T11:53:00-FLR-001",
+                       "beginTime":  "2017-09-06T11:53Z",
+                       "peakTime":  "2017-09-06T12:02Z",
+                       "classType":  "X9.3",
+                       "sourceLocation":  "S07W33",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13010/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-06T15:51:00-FLR-001",
+                       "beginTime":  "2017-09-06T15:51Z",
+                       "peakTime":  "2017-09-06T15:56Z",
+                       "classType":  "M2.5",
+                       "sourceLocation":  "S07W33",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13020/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-06T19:20:00-FLR-001",
+                       "beginTime":  "2017-09-06T19:20Z",
+                       "peakTime":  "2017-09-06T19:30Z",
+                       "classType":  "M1.4",
+                       "sourceLocation":  "S09W38",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13022/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-06T23:33:00-FLR-001",
+                       "beginTime":  "2017-09-06T23:33Z",
+                       "peakTime":  "2017-09-06T23:39Z",
+                       "classType":  "M1.2",
+                       "sourceLocation":  "S08W40",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13130/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-07T05:00:00-FLR-001",
+                       "beginTime":  "2017-09-07T05:00Z",
+                       "peakTime":  "2017-09-07T05:02Z",
+                       "classType":  "M2.4",
+                       "sourceLocation":  "S09W49",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13041/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-07T09:50:00-FLR-001",
+                       "beginTime":  "2017-09-07T09:50Z",
+                       "peakTime":  "2017-09-07T09:54Z",
+                       "classType":  "M1.4",
+                       "sourceLocation":  "S09W49",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13042/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-07T10:11:00-FLR-001",
+                       "beginTime":  "2017-09-07T10:11Z",
+                       "peakTime":  "2017-09-07T10:15Z",
+                       "classType":  "M7.3",
+                       "sourceLocation":  "S08W47",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13038/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-07T14:20:00-FLR-001",
+                       "beginTime":  "2017-09-07T14:20Z",
+                       "peakTime":  "2017-09-07T14:36Z",
+                       "classType":  "X1.3",
+                       "sourceLocation":  "S09W53",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13043/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-07T23:51:00-FLR-001",
+                       "beginTime":  "2017-09-07T23:51Z",
+                       "peakTime":  "2017-09-07T23:59Z",
+                       "classType":  "M3.9",
+                       "sourceLocation":  "S15W50",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13060/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-08T02:19:00-FLR-001",
+                       "beginTime":  "2017-09-08T02:19Z",
+                       "peakTime":  "2017-09-08T02:24Z",
+                       "classType":  "M1.3",
+                       "sourceLocation":  "S09W55",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13064/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-08T03:39:00-FLR-001",
+                       "beginTime":  "2017-09-08T03:39Z",
+                       "peakTime":  "2017-09-08T03:43Z",
+                       "classType":  "M1.2",
+                       "sourceLocation":  "S07W55",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13065/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-08T07:40:00-FLR-001",
+                       "beginTime":  "2017-09-08T07:40Z",
+                       "peakTime":  "2017-09-08T07:49Z",
+                       "classType":  "M8.1",
+                       "sourceLocation":  "S10W58",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13061/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-08T15:09:00-FLR-001",
+                       "beginTime":  "2017-09-08T15:09Z",
+                       "peakTime":  "2017-09-08T15:47Z",
+                       "classType":  "M3.0",
+                       "sourceLocation":  "S09W67",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13075/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-08T23:34:00-FLR-001",
+                       "beginTime":  "2017-09-08T23:34Z",
+                       "peakTime":  "2017-09-08T23:45Z",
+                       "classType":  "M2.1",
+                       "sourceLocation":  "S09W71",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13082/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-09T04:14:00-FLR-001",
+                       "beginTime":  "2017-09-09T04:14Z",
+                       "peakTime":  "2017-09-09T04:28Z",
+                       "classType":  "M1.1",
+                       "sourceLocation":  "S09W72",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13088/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-09T10:51:00-FLR-001",
+                       "beginTime":  "2017-09-09T10:51Z",
+                       "peakTime":  "2017-09-09T11:04Z",
+                       "classType":  "M3.7",
+                       "sourceLocation":  "S09W76",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13087/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-09T22:04:00-FLR-001",
+                       "beginTime":  "2017-09-09T22:04Z",
+                       "peakTime":  "2017-09-09T23:54Z",
+                       "classType":  "M1.1",
+                       "sourceLocation":  "S09W82",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13092/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-10T02:39:00-FLR-001",
+                       "beginTime":  "2017-09-10T02:39Z",
+                       "peakTime":  "2017-09-10T03:09Z",
+                       "classType":  "C9.0",
+                       "sourceLocation":  "S09W88",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13093/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-10T15:35:00-FLR-001",
+                       "beginTime":  "2017-09-10T15:35Z",
+                       "peakTime":  "2017-09-10T16:06Z",
+                       "classType":  "X8.2",
+                       "sourceLocation":  "S08W88",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13098/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-11T10:08:00-FLR-001",
+                       "beginTime":  "2017-09-11T10:08Z",
+                       "peakTime":  "2017-09-11T10:10Z",
+                       "classType":  "B9.8",
+                       "sourceLocation":  "N11W88",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13120/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-12T07:23:00-FLR-001",
+                       "beginTime":  "2017-09-12T07:23Z",
+                       "peakTime":  "2017-09-12T07:29Z",
+                       "classType":  "C3.0",
+                       "sourceLocation":  "N09E49",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13124/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-12T19:03:00-FLR-001",
+                       "beginTime":  "2017-09-12T19:03Z",
+                       "peakTime":  "2017-09-12T19:20Z",
+                       "classType":  "C1.6",
+                       "sourceLocation":  "N07E41",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13131/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-13T07:39:00-FLR-001",
+                       "beginTime":  "2017-09-13T07:39Z",
+                       "peakTime":  "2017-09-13T07:48Z",
+                       "classType":  "B1.4",
+                       "sourceLocation":  "N06E34",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13142/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-20T12:32:00-FLR-001",
+                       "beginTime":  "2017-09-20T12:32Z",
+                       "peakTime":  "2017-09-20T12:43Z",
+                       "classType":  "B5.4",
+                       "sourceLocation":  "S16E87",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13204/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-20T19:28:00-FLR-001",
+                       "beginTime":  "2017-09-20T19:28Z",
+                       "peakTime":  "2017-09-20T19:32Z",
+                       "classType":  "B8.4",
+                       "sourceLocation":  "N08W64",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13205/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-26T02:31:00-FLR-001",
+                       "beginTime":  "2017-09-26T02:31Z",
+                       "peakTime":  "2017-09-26T02:34Z",
+                       "classType":  "C1.8",
+                       "sourceLocation":  "N13E71",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13222/-1"
+                   },
+                   {
+                       "flrID":  "2017-09-27T00:49:00-FLR-001",
+                       "beginTime":  "2017-09-27T00:49Z",
+                       "peakTime":  "2017-09-27T01:00Z",
+                       "classType":  "C1.7",
+                       "sourceLocation":  "N12E60",
+                       "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13228/-1"
+                   }
+               ],
+    "seps":  [
+                 {
+                     "sepID":  "2017-09-04T22:56:00-SEP-001",
+                     "eventTime":  "2017-09-04T22:56Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13004/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-04T23:52:00-SEP-001",
+                     "eventTime":  "2017-09-04T23:52Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13000/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-05T00:30:00-SEP-001",
+                     "eventTime":  "2017-09-05T00:30Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/12984/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-06T23:30:00-SEP-001",
+                     "eventTime":  "2017-09-06T23:30Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13081/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-06T23:45:00-SEP-001",
+                     "eventTime":  "2017-09-06T23:45Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13036/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-10T16:25:00-SEP-001",
+                     "eventTime":  "2017-09-10T16:25Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13101/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-10T16:45:00-SEP-001",
+                     "eventTime":  "2017-09-10T16:45Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13104/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-10T20:00:00-SEP-001",
+                     "eventTime":  "2017-09-10T20:00Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13112/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-13T05:33:00-SEP-001",
+                     "eventTime":  "2017-09-13T05:33Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13134/-1"
+                 },
+                 {
+                     "sepID":  "2017-09-17T23:40:00-SEP-001",
+                     "eventTime":  "2017-09-17T23:40Z",
+                     "link":  "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13186/-1"
+                 }
+             ]
+}
