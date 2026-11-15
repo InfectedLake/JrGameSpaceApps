@@ -1,0 +1,572 @@
+fileFormatVersion: 2
+guid: ad5020d5e92345942a420f2abe2b2e97
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -7363570365442755520
+    second: meteoritos de fondo_0
+  - first:
+      213: 2181424287289244039
+    second: meteoritos de fondo_1
+  - first:
+      213: 5727245487451135111
+    second: meteoritos de fondo_2
+  - first:
+      213: 5263138172257213376
+    second: meteoritos de fondo_3
+  - first:
+      213: 5972094928615438431
+    second: meteoritos de fondo_4
+  - first:
+      213: 8444057797796625385
+    second: meteoritos de fondo_5
+  - first:
+      213: 5998437096459109802
+    second: meteoritos de fondo_6
+  - first:
+      213: 1405574330715519634
+    second: meteoritos de fondo_7
+  - first:
+      213: 2915867758891084224
+    second: meteoritos de fondo_8
+  - first:
+      213: -1274304595773521561
+    second: meteoritos de fondo_9
+  - first:
+      213: 6413988777202079402
+    second: meteoritos de fondo_10
+  - first:
+      213: 199390113665250944
+    second: meteoritos de fondo_11
+  - first:
+      213: 1826799677088819752
+    second: meteoritos de fondo_12
+  - first:
+      213: 7401111348400299507
+    second: meteoritos de fondo_13
+  - first:
+      213: -8852414586626867222
+    second: meteoritos de fondo_14
+  - first:
+      213: 3898668223045891361
+    second: meteoritos de fondo_15
+  - first:
+      213: -4984730498004197601
+    second: meteoritos de fondo_16
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: meteoritos de fondo_0
+      rect:
+        serializedVersion: 2
+        x: 193
+        y: 749
+        width: 41
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 044f03934c75fc990800000000000000
+      internalID: -7363570365442755520
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_1
+      rect:
+        serializedVersion: 2
+        x: 1379
+        y: 791
+        width: 40
+        height: 44
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 789f844e4d9f54e10800000000000000
+      internalID: 2181424287289244039
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_2
+      rect:
+        serializedVersion: 2
+        x: 1488
+        y: 706
+        width: 77
+        height: 100
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78cdbf43d634b7f40800000000000000
+      internalID: 5727245487451135111
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_3
+      rect:
+        serializedVersion: 2
+        x: 1687
+        y: 767
+        width: 40
+        height: 45
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0cb9039484c6a0940800000000000000
+      internalID: 5263138172257213376
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_4
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 689
+        width: 34
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f58f80132b421e250800000000000000
+      internalID: 5972094928615438431
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_5
+      rect:
+        serializedVersion: 2
+        x: 105
+        y: 560
+        width: 95
+        height: 141
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ebf88c14d15f2570800000000000000
+      internalID: 8444057797796625385
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_6
+      rect:
+        serializedVersion: 2
+        x: 299
+        y: 659
+        width: 78
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa588f512cabe3350800000000000000
+      internalID: 5998437096459109802
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_7
+      rect:
+        serializedVersion: 2
+        x: 1605
+        y: 575
+        width: 94
+        height: 144
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 29ab4bf186a918310800000000000000
+      internalID: 1405574330715519634
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_8
+      rect:
+        serializedVersion: 2
+        x: 1796
+        y: 682
+        width: 77
+        height: 100
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c9a7bc174e377820800000000000000
+      internalID: 2915867758891084224
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_9
+      rect:
+        serializedVersion: 2
+        x: 184
+        y: 317
+        width: 119
+        height: 175
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7618541c8b2c05ee0800000000000000
+      internalID: -1274304595773521561
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_10
+      rect:
+        serializedVersion: 2
+        x: 1676
+        y: 325
+        width: 119
+        height: 175
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa6d8726fc0130950800000000000000
+      internalID: 6413988777202079402
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_11
+      rect:
+        serializedVersion: 2
+        x: 1918
+        y: 455
+        width: 97
+        height: 120
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 086fdb0804064c200800000000000000
+      internalID: 199390113665250944
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_12
+      rect:
+        serializedVersion: 2
+        x: 21
+        y: 331
+        width: 67
+        height: 91
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82a6da4a0a81a5910800000000000000
+      internalID: 1826799677088819752
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_13
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 37
+        width: 138
+        height: 219
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3fd13800f8706b660800000000000000
+      internalID: 7401111348400299507
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_14
+      rect:
+        serializedVersion: 2
+        x: 309
+        y: 115
+        width: 146
+        height: 187
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aef7e97e5d7e52580800000000000000
+      internalID: -8852414586626867222
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_15
+      rect:
+        serializedVersion: 2
+        x: 1513
+        y: 0
+        width: 119
+        height: 174
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 125f0c3c71ada1630800000000000000
+      internalID: 3898668223045891361
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: meteoritos de fondo_16
+      rect:
+        serializedVersion: 2
+        x: 1755
+        y: 129
+        width: 98
+        height: 120
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1f5765b50ea2dab0800000000000000
+      internalID: -4984730498004197601
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      meteoritos de fondo_0: -7363570365442755520
+      meteoritos de fondo_1: 2181424287289244039
+      meteoritos de fondo_10: 6413988777202079402
+      meteoritos de fondo_11: 199390113665250944
+      meteoritos de fondo_12: 1826799677088819752
+      meteoritos de fondo_13: 7401111348400299507
+      meteoritos de fondo_14: -8852414586626867222
+      meteoritos de fondo_15: 3898668223045891361
+      meteoritos de fondo_16: -4984730498004197601
+      meteoritos de fondo_2: 5727245487451135111
+      meteoritos de fondo_3: 5263138172257213376
+      meteoritos de fondo_4: 5972094928615438431
+      meteoritos de fondo_5: 8444057797796625385
+      meteoritos de fondo_6: 5998437096459109802
+      meteoritos de fondo_7: 1405574330715519634
+      meteoritos de fondo_8: 2915867758891084224
+      meteoritos de fondo_9: -1274304595773521561
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
