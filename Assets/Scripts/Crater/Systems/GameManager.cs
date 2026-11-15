@@ -128,6 +128,7 @@ namespace Crater.Systems
             State.astronautNames = new List<string>(setup.astronautNames);
             Rng = new GameRandom(State);
             State.schedule = EventScheduler.Generate(Config, Rng);
+            State.minorSchedule = MinorEventRules.Generate(Config, Rng, State.schedule);
             State.history.Add(State.Snapshot());
             InGame = true;
             GameStarted?.Invoke();

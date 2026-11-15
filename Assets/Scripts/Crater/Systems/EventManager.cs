@@ -36,7 +36,52 @@ namespace Crater.Systems
             if (S.emergency) pending.Add(EmergencyPrompt());
             foreach (var ev in EventScheduler.Arrivals(S).ToList()) EnqueueArrival(ev);
             foreach (var ev in EventScheduler.DueWarnings(S, C).ToList()) ProcessWarning(ev);
+            QueueMinorEvent();
             ShowNext();
+        }
+
+        // ------------------------------------------------------------------ Eventos menores
+
+        /// <summary>
+        /// Un evento menor solo aparece en un día sin ninguna otra ventana (ni principal, ni aviso, ni emergencia)
+        /// y solo si al menos una opción se puede pagar. Si no, se pospone al día siguiente.
+        /// </summary>
+        void QueueMinorEvent()
+        {
+            var due = MinorEventRules.Due(S);
+            if (due == null) return;
+            var def = MinorEventRules.Find(C, due.id);
+            if (def == null) { due.resolved = true; due.skipped = true; return; }
+            if (pending.Count > 0 || !MinorEventRules.CanResolve(S, def)) { MinorEventRules.Postpone(S, due); return; }
+            pending.Add(MinorPrompt(due, def));
+        }
+
+        EventPrompt MinorPrompt(ScheduledMinor due, MinorEventDef def)
+        {
+            var p = new EventPrompt
+            {
+                kind = PromptKind.Choice,
+                title = def.name,
+                body = def.description,
+                color = new Color(0.32f, 0.45f, 0.62f),
+            };
+            for (int i = 0; i < 2; i++)
+            {
+                var o = def.Option(i);
+                var opt = new PromptOption { label = o.text, resource = o.resource, cost = o.cost };
+                opt.enabled = MinorEventRules.CanPay(S, o);
+                if (!opt.enabled) opt.disabledReason = "no hay suficiente " + MinorEventRules.ResourceName(o.resource).ToLowerInvariant();
+                opt.onChoose = () =>
+                {
+                    MinorEventRules.Apply(S, o, C);
+                    due.resolved = true;
+                    string loss = MinorEventRules.ResourceName(o.resource) + " −" + o.cost;
+                    G.Decision(def.name + ": " + o.text + " (" + loss + ")");
+                    G.Notify(def.name + " resuelto. " + loss + ".", NoticeKind.Info);
+                };
+                p.options.Add(opt);
+            }
+            return p;
         }
 
         public void Choose(PromptOption option)

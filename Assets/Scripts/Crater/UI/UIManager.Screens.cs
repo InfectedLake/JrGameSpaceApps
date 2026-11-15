@@ -108,7 +108,7 @@ namespace Crater.UI
             var lenRow = UIFactory.Rect(body, "Duracion");
             UIFactory.HStack(lenRow.gameObject, 14);
             UIFactory.Size(lenRow, 64);
-            foreach (var (cycles, label) in new[] { (4, "Corta: 4 ciclos"), (6, "Normal: 6 ciclos"), (8, "Larga: 8 ciclos") })
+            foreach (var (cycles, label) in new[] { (4, "Corta (fácil): 4 ciclos"), (6, "Normal: 6 ciclos"), (8, "Larga: 8 ciclos") })
             {
                 int v = cycles;
                 lengthButtons.Add(UIFactory.Button(lenRow, label, label, Theme.PanelSoft, Theme.Ink, 24, () => { setupCycles = v; RefreshSetup(); }));

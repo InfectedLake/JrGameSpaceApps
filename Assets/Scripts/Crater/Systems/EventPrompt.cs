@@ -15,6 +15,9 @@ namespace Crater.Systems
         public bool enabled = true;
         public string disabledReason;
         public Action onChoose;
+        /// <summary>Eventos menores: recurso que se pierde y cuánto (la interfaz muestra su icono).</summary>
+        public ResourceKind? resource;
+        public int cost;
     }
 
     /// <summary>

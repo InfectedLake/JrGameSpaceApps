@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Crater.Core
 {
@@ -52,8 +53,8 @@ namespace Crater.Core
         public int alertThreshold = 25;
 
         // --- Tripulación ---
-        public int oxygenPerAstronaut = 1;
-        public int foodPerAstronaut = 1;
+        public int oxygenPerAstronaut = 2;    // [JUEGO] unidad de balance, no una medición real
+        public int foodPerAstronaut = 2;      // [JUEGO]
         public int starvingHealthLoss = 20;
 
         // --- Edificios (orden = BuildingId) ---
@@ -67,7 +68,7 @@ namespace Crater.Core
         // --- Salud y vivienda [JUEGO] ---
         public int lowHabitatThreshold = 25;
         public int lowHabitatHealthLoss = 5;
-        public int healthRecovery = 5;
+        public int healthRecovery = 2;          // solo con la vivienda encendida
         public int healthRecoveryHabitatMin = 50;
 
         // --- Calendario ---
@@ -78,7 +79,7 @@ namespace Crater.Core
 
         // --- Vivienda (edificio) [JUEGO] ---
         public int habitatUpkeepGain = 2;      // encendida: la integridad mejora un poco cada día
-        public int habitatOffLoss = 5;         // apagada o sin energía: la integridad baja
+        public int habitatOffHealthLoss = 3;   // apagada o sin energía: Salud −3 por día
 
         // --- Baterías [JUEGO] ---
         public int emergencyBatteryEnergy = 20;
@@ -128,6 +129,11 @@ namespace Crater.Core
         public int eclipseEnergyOverheadTurns = 2;
         public int maxEclipses = 2;
 
+        // --- Eventos menores [JUEGO] ---
+        public float minorEventsPerTurn = 0.30f;   // 15 días → 4-5 eventos; 24 días → ~7
+        public int minorEventMinGap = 2;           // días mínimos entre dos eventos menores
+        public List<MinorEventDef> minorEvents = MinorEventRules.Defaults();
+
         // --- Eventos extra ---
         public float extraRadiationChance = 0.40f;
         public float extraMeteorChance = 0.35f;
@@ -143,9 +149,9 @@ namespace Crater.Core
 
         public static BuildingStats[] DefaultBuildings() => new[]
         {
-            new BuildingStats(BuildingId.Solar,      "Planta de energía",  25,  0, 0,  0, 0, true,  true),
-            new BuildingStats(BuildingId.Greenhouse, "Invernadero",       -10,  4, 8, -2, 2, true,  false),
-            new BuildingStats(BuildingId.Recycler,   "Planta de oxígeno", -20, 10, 0, -4, 1, true,  true),
+            new BuildingStats(BuildingId.Solar,      "Planta de energía",  23,  0, 0,  0, 0, true,  true),
+            new BuildingStats(BuildingId.Greenhouse, "Invernadero",       -12,  2, 8, -2, 2, true,  false),
+            new BuildingStats(BuildingId.Recycler,   "Planta de oxígeno", -22, 10, 0, -4, 1, true,  true),
             new BuildingStats(BuildingId.Habitat,    "Vivienda",           -5,  0, 0,  0, 3, true,  true),
         };
 
@@ -156,6 +162,7 @@ namespace Crater.Core
             for (int i = 0; i < buildings.Length; i++) c.buildings[i] = buildings[i].Clone();
             c.intensityChances = (float[])intensityChances.Clone();
             c.eclipseSectionCost = (int[])eclipseSectionCost.Clone();
+            c.minorEvents = new List<MinorEventDef>(minorEvents ?? new List<MinorEventDef>());
             return c;
         }
     }

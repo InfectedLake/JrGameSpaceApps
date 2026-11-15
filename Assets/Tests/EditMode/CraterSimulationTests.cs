@@ -22,13 +22,13 @@ namespace Crater.Tests
             Assert.IsTrue(s.IsOn(BuildingId.Recycler)); Assert.IsTrue(s.IsOn(BuildingId.Habitat));
 
             var r = TurnSimulator.Simulate(s, c);
-            Assert.AreEqual(90, r.after.energy);           // la vivienda (−5 [JUEGO]) reemplaza al escudo apagado
-            Assert.AreEqual(81, r.after.oxygen);
-            Assert.AreEqual(65, r.after.food);
-            Assert.AreEqual(-10, r.energy.Delta);
-            Assert.AreEqual(11, r.oxygen.Delta);
-            Assert.AreEqual(5, r.food.Delta);
-            Assert.AreEqual("100 + 25 − 20 − 10 − 5", r.energy.Formula());
+            Assert.AreEqual(84, r.after.energy);           // rebalance [JUEGO]: todo encendido = −16
+            Assert.AreEqual(76, r.after.oxygen);
+            Assert.AreEqual(62, r.after.food);
+            Assert.AreEqual(-16, r.energy.Delta);
+            Assert.AreEqual(6, r.oxygen.Delta);
+            Assert.AreEqual(2, r.food.Delta);
+            Assert.AreEqual("100 + 23 − 22 − 12 − 5", r.energy.Formula());
             // La simulación no modifica el estado original.
             Assert.AreEqual(100, s.energy); Assert.AreEqual(1, s.day);
         }
@@ -40,10 +40,10 @@ namespace Crater.Tests
             var c = Cfg(); var s = NewState(c);
             s.buildingOn[(int)BuildingId.Recycler] = false;
             var r = TurnSimulator.Simulate(s, c);
-            Assert.AreEqual(1, r.oxygen.Delta);           // +11 pasa a +1
-            Assert.AreEqual(10, r.energy.GrossDelta);     // la energía pasa a +10
-            Assert.AreEqual(100, r.after.energy);         // con límite 100 (se desperdician 10)
-            Assert.AreEqual(10, r.energy.Wasted);
+            Assert.AreEqual(-4, r.oxygen.Delta);          // +6 pasa a −4
+            Assert.AreEqual(6, r.energy.GrossDelta);      // la energía pasa a +6
+            Assert.AreEqual(100, r.after.energy);         // con límite 100 (se desperdician 6)
+            Assert.AreEqual(6, r.energy.Wasted);
             Assert.AreEqual(0, r.Get(BuildingId.Recycler).energyUsed);
             Assert.AreEqual(BuildingVisual.Off, r.Get(BuildingId.Recycler).visual);
         }
@@ -55,11 +55,12 @@ namespace Crater.Tests
             var c = Cfg(); var s = NewState(c);
             s.energy = 0;
             var r = TurnSimulator.Simulate(s, c);
-            // 0 + 25 = 25: reciclador (20) sí; invernadero (10 > 5) no; vivienda (5) sí.
+            // 0 + 23 = 23: reciclador (22) sí; invernadero (12 > 1) no; vivienda (5 > 1) no.
             Assert.AreEqual(BuildingVisual.Working, r.Get(BuildingId.Recycler).visual);
             Assert.AreEqual(BuildingVisual.NoPower, r.Get(BuildingId.Greenhouse).visual);
-            Assert.AreEqual(BuildingVisual.Working, r.Get(BuildingId.Habitat).visual);
-            Assert.AreEqual(0, r.after.energy);
+            Assert.AreEqual(BuildingVisual.NoPower, r.Get(BuildingId.Habitat).visual);
+            Assert.AreEqual(1, r.after.energy);
+            Assert.IsTrue(r.health.labels.Contains("vivienda apagada")); // vivienda sin energía: Salud −3
             Assert.IsTrue(r.Get(BuildingId.Greenhouse).on);
         }
 
@@ -184,7 +185,7 @@ namespace Crater.Tests
             var c = Cfg();
             var s = NewState(c);
             s.panels.capacity = 50; s.panels.broken = true;
-            Assert.AreEqual(13, TurnSimulator.Simulate(s, c).solarProduced); // 25 × 50% = 12.5 → 13
+            Assert.AreEqual(12, TurnSimulator.Simulate(s, c).solarProduced); // 23 × 50% = 11.5 → 12
 
             Assert.IsTrue(BaseActions.CanRepairNow(s.panels, s, c, out _));
             BaseActions.RepairNow(s.panels, s, c);
@@ -217,14 +218,14 @@ namespace Crater.Tests
             Assert.AreEqual(0, s.batteries);
             var r = TurnSimulator.Simulate(s, c);
             Assert.AreEqual(0, r.solarProduced);
-            Assert.AreEqual(24, r.Get(BuildingId.Recycler).energyUsed); // +20 %
+            Assert.AreEqual(26, r.Get(BuildingId.Recycler).energyUsed); // 22 × 1.2 = 26.4
             Assert.AreEqual(1, r.after.energyOverheadTurns);
 
             var s2 = NewState(c);
             EclipseRules.Apply(s2, new[] { false, true, true, true }, c); // sin oxígeno
             var r2 = TurnSimulator.Simulate(s2, c);
             Assert.AreEqual(0, r2.Get(BuildingId.Recycler).oxygenMade);
-            Assert.AreEqual(70 - 25 - 3, r2.after.oxygen);
+            Assert.AreEqual(70 - 25 - 6, r2.after.oxygen);
             Assert.AreEqual(1, s2.batteries);
 
             var s3 = NewState(c);
@@ -314,6 +315,78 @@ namespace Crater.Tests
             var r = TurnSimulator.Simulate(s, c);
             Assert.IsTrue(r.after.emergency);
             Assert.AreEqual(Outcome.Playing, r.after.outcome);
+        }
+
+        // ---------------- Rebalance ----------------
+        [Test]
+        public void Rebalance_ApagarReciclador_EnergiaMas6_OxigenoMenos4()
+        {
+            var c = Cfg(); var s = NewState(c);
+            s.energy = 50;
+            s.buildingOn[(int)BuildingId.Recycler] = false;
+            var r = TurnSimulator.Simulate(s, c);
+            Assert.AreEqual(6, r.energy.Delta);
+            Assert.AreEqual(-4, r.oxygen.Delta);
+            Assert.AreEqual(2, r.food.Delta);
+        }
+
+        [Test]
+        public void Vivienda_Apagada_Salud3()
+        {
+            var c = Cfg(); var s = NewState(c);
+            s.buildingOn[(int)BuildingId.Habitat] = false;
+            var r = TurnSimulator.Simulate(s, c);
+            Assert.AreEqual(-3, r.health.Delta);
+        }
+
+        // ---------------- Eventos menores ----------------
+        [Test]
+        public void Menores_SeisEventos_DosOpciones_RecursosDistintos_SinGratis()
+        {
+            var c = Cfg();
+            Assert.AreEqual(6, c.minorEvents.Count);
+            foreach (var e in c.minorEvents)
+            {
+                Assert.IsTrue(e.optionA.resource != e.optionB.resource);
+                Assert.IsTrue(e.optionA.cost > 0 && e.optionB.cost > 0);
+            }
+        }
+
+        [Test]
+        public void Menores_NoCoincidenConPrincipalesNiSeRepitenAntesDeAgotarse()
+        {
+            var c = Cfg();
+            for (int seed = 0; seed < 200; seed++)
+            {
+                var s = GameState.CreateNew(c, seed);
+                var rng = new GameRandom(s);
+                var mains = EventScheduler.Generate(c, rng);
+                var minors = MinorEventRules.Generate(c, rng, mains);
+                Assert.IsTrue(minors.Count >= 4);
+                foreach (var m in minors)
+                {
+                    Assert.IsTrue(m.day > c.turnsPerCycle);                       // nada durante el tutorial
+                    Assert.IsFalse(mains.Any(e => e.day == m.day || e.day - EventScheduler.WarningLead(e.type, c) == m.day));
+                }
+                for (int i = 1; i < minors.Count; i++) Assert.IsTrue(minors[i].day - minors[i - 1].day >= c.minorEventMinGap);
+                var first = minors.Take(6).Select(m => m.id).ToList();
+                Assert.AreEqual(first.Count, first.Distinct().Count());
+            }
+        }
+
+        [Test]
+        public void Menores_OpcionSinRecursoSeDeshabilita_YSeCobraUnaVez()
+        {
+            var c = Cfg(); var s = NewState(c);
+            var frio = c.minorEvents.First(e => e.id == "frio");
+            s.energy = 5;
+            Assert.IsFalse(MinorEventRules.CanPay(s, frio.optionA));  // Energía −8 con solo 5
+            Assert.IsTrue(MinorEventRules.CanPay(s, frio.optionB));   // Salud −5
+            MinorEventRules.Apply(s, frio.optionB, c);
+            Assert.AreEqual(95, s.health);
+            Assert.AreEqual(5, s.energy);
+            s.energy = 0; s.health = 3;
+            Assert.IsFalse(MinorEventRules.CanResolve(s, frio));       // ninguna opción válida: se pospone
         }
     }
 }

@@ -15,7 +15,7 @@ MonoBehaviour:
   stats:
     id: 0
     name: "Planta de energía"
-    energy: 25
+    energy: 23
     oxygen: 0
     food: 0
     water: 0

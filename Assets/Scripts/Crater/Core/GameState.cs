@@ -61,6 +61,7 @@ namespace Crater.Core
 
         // Registro
         public List<ScheduledEvent> schedule = new List<ScheduledEvent>();
+        public List<ScheduledMinor> minorSchedule = new List<ScheduledMinor>();
         public List<EventRecord> eventsLog = new List<EventRecord>();
         public List<string> decisions = new List<string>();
         public List<DaySnapshot> history = new List<DaySnapshot>();

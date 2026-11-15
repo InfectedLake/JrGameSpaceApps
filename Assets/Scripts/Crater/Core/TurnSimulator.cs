@@ -191,9 +191,9 @@ namespace Crater.Core
             F.Add(-s.astronauts * c.foodPerAstronaut, "tripulación");
 
             // Vivienda: descanso, refugio de regolito y ánimo.
-            // Vivienda (edificio): encendida mantiene y mejora el hábitat; apagada o sin energía lo deteriora.
+            // Vivienda (edificio): encendida mantiene el hábitat; apagada o sin energía la tripulación lo sufre (Salud, paso 7).
             if (habitatWorking) V.Add(c.habitatUpkeepGain, "sistemas de la vivienda");
-            else { V.Add(-c.habitatOffLoss, "vivienda sin sistemas"); s.habitatDownCycle = s.Cycle; }
+            else s.habitatDownCycle = s.Cycle;
             if (s.roverBusyTurns > 0)
             {
                 s.roverBusyTurns--;
@@ -217,10 +217,11 @@ namespace Crater.Core
             bool noOxygen = O.gross <= 0, noFood = F.gross <= 0;
             if (noOxygen || noFood)
                 H.Add(-c.starvingHealthLoss, noOxygen ? "sin oxígeno" : "sin comida");
+            if (!habitatWorking) H.Add(-c.habitatOffHealthLoss, "vivienda apagada");
             int habitatNow = Num.Clamp(V.gross, 0, c.resourceMax);
             if (habitatNow < c.lowHabitatThreshold)
                 H.Add(-c.lowHabitatHealthLoss, "vivienda en mal estado");
-            else if (!noOxygen && !noFood && habitatNow >= c.healthRecoveryHabitatMin && s.health < c.resourceMax)
+            else if (habitatWorking && !noOxygen && !noFood && habitatNow >= c.healthRecoveryHabitatMin && s.health < c.resourceMax)
                 H.Add(c.healthRecovery, "buen descanso y cuidados");
 
             // 8. Límites.

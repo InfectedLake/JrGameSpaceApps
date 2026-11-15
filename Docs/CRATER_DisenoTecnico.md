@@ -78,7 +78,7 @@ Conversión [JUEGO]: clase de llamarada X → intensidad 3, M → 2, otras → 1
 |---|---|
 | Consumo de agua del reciclador / invernadero | 4 / 2 por día |
 | Hielo que recolecta el rover | 6 de agua por día × capacidad |
-| Edificio Vivienda (reemplaza al escudo) | Energía −5/día, empieza encendida. Encendida: integridad +2/día. Apagada o sin energía: −5/día. Por eso el día 1 proyecta Energía 90 (antes 95 con el escudo apagado). |
+| Edificio Vivienda (reemplaza al escudo) | Energía −5/día, empieza encendida. Encendida: integridad +2/día y permite recuperar salud. Apagada o sin energía: Salud −3/día. |
 | Paredes de agua | 80 % si hubo aviso y se eligieron antes de la tormenta; si no, 20 %. |
 | Aviso de radiación | 2 días antes (permite terminar el iglú de 2 días). Micrometeoritos y eclipse: 1 día. |
 | Iglú de regolito | Protege una tormenta y luego hay que rehacerlo. Si se elige sin tiempo: bloqueo −15 % (dosis +15 %). |
@@ -120,3 +120,61 @@ La misión es indulgente, como pide el público de 7–12 años. Para endurecerl
 - **Pantalla final:** resultado, días sobrevividos, estado de la tripulación o causa de la derrota, y dos botones.
 - **Ciencia:** sigue en CIENCIA REAL y CRÉDITOS del menú principal.
 - **Partidas guardadas:** las de la versión anterior (con escudo) ya no se cargan.
+
+## Rebalanceo y eventos menores (15-nov-2026)
+
+Reemplaza los valores anteriores de esta guía. Todos son [JUEGO] y se editan en `Assets/Data/Crater/GameBalance.asset` (eventos menores, tripulación, salud) y en `Assets/Data/Crater/Edificios/*.asset` (producción y consumo).
+
+### Valores finales
+
+| Edificio | Energía | Oxígeno | Comida | Agua |
+|---|---:|---:|---:|---:|
+| Planta de energía | +23 | 0 | 0 | 0 |
+| Invernadero | −12 | +2 | +8 | −2 |
+| Planta de oxígeno | −22 | +10 | 0 | −4 |
+| Vivienda | −5 | 0 | 0 | 0 |
+
+- Cada astronauta: −2 oxígeno y −2 comida por día (3 astronautas: −6 y −6).
+- Todo encendido: Energía −16, Oxígeno +6, Comida +2. Con la planta de oxígeno apagada: Energía +6, Oxígeno −4, Comida +2.
+- Vivienda apagada o sin energía: Salud −3 por día. La salud solo se recupera (+2/día) con la vivienda encendida.
+- Límites: el cambio de cada recurso se suma completo y el límite 0–100 se aplica una sola vez al final del día. La proyección usa el mismo `TurnSimulator.Simulate`, así que siempre coincide.
+
+### Eventos menores
+
+| Evento | Opción A | Opción B |
+|---|---|---|
+| Polvo lunar en los paneles | Energía −8 | Comida −7 |
+| Filtro de aire saturado | Energía −8 | Oxígeno −7 |
+| Descenso de temperatura | Energía −8 | Salud −5 |
+| Problema en los cultivos | Comida −8 | Energía −9 |
+| Pequeña fuga de aire | Oxígeno −8 | Energía −10 |
+| Fuga en el depósito de agua | Energía −8 | Comida −7 |
+
+- Frecuencia: `minorEventsPerTurn = 0.30` (unos 7 en 24 días, 4–5 en 16) y al menos un día de separación (`minorEventMinGap = 2`).
+- Nunca en el ciclo 1 (tutorial), ni el día de un evento principal, ni el día de su aviso. Si ese día aparece otra ventana (emergencia, aviso), el menor se pospone al día siguiente.
+- No se repite un evento hasta agotar los seis.
+- Una opción que no se puede pagar se deshabilita y dice por qué. Si ninguna se puede pagar, el evento se pospone. Nunca hay valores negativos y el costo se cobra una vez.
+- Se muestran con la misma ventana de eventos: nombre, una frase y dos botones con el icono, el nombre y la cantidad del recurso que se pierde.
+
+### Simulación de balance (1000 partidas por estrategia, mismas reglas que el juego)
+
+Misión normal de 24 días:
+
+| Estrategia | Victorias | Salud final media al ganar |
+|---|---:|---:|
+| Todo encendido siempre | 28% | 40 |
+| Todo apagado (solo paneles) | 0% | — |
+| Priorizar solo oxígeno (invernadero apagado) | 0% | — |
+| Planta de oxígeno apagada | 0% | — |
+| Vivienda apagada | 11% | 14 |
+| Adaptativa (alterna según los recursos) | 99.5% | 95 |
+| Adaptativa con 25% de días al azar | 99.1% | 91 |
+| Adaptativa con dos rachas de malas decisiones | 99.6% | 95 |
+| Adaptativa eligiendo siempre la opción A / siempre la B | 99.7% / 99.5% | 95 / 95 |
+
+Conclusiones:
+- Mantener todo encendido o ignorar un sistema falla con frecuencia.
+- Alternar sistemas es viable, y se puede recuperar de errores.
+- Ninguna alternativa de los eventos menores es siempre mejor.
+
+**Misión corta (16 días):** las reservas iniciales alcanzan para casi todo (todo encendido gana el 99.6%), así que en la configuración se presenta como "Corta (fácil)". No se cambiaron las duraciones.

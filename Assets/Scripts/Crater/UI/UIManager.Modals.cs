@@ -78,6 +78,12 @@ namespace Crater.UI
             }
         }
 
+        static Color ResourceColor(ResourceKind r) =>
+            r == ResourceKind.Energy ? Theme.Energy : r == ResourceKind.Oxygen ? Theme.Oxygen : r == ResourceKind.Food ? Theme.Food : Theme.Health;
+
+        static string ResourceLetter(ResourceKind r) =>
+            r == ResourceKind.Energy ? "E" : r == ResourceKind.Oxygen ? "O2" : r == ResourceKind.Food ? "C" : "S";
+
         static TextMeshProUGUI Line(Transform parent, string text, float size = 24, Color? color = null, FontStyles style = FontStyles.Normal)
         {
             var t = UIFactory.Text(parent, "Linea", text, size, color ?? Theme.Ink, TextAlignmentOptions.Left, style);
@@ -137,6 +143,22 @@ namespace Crater.UI
                 lbl.rectTransform.Stretch(22, 12, 22, 12);
                 lbl.alignment = TextAlignmentOptions.TopLeft;
                 lbl.fontStyle = FontStyles.Normal;
+                if (o.resource.HasValue)
+                {
+                    // Evento menor: icono del recurso + nombre + cantidad que se pierde.
+                    var r = o.resource.Value;
+                    var icon = UIFactory.Image(b.transform, "Icono", ResourceColor(r), SpriteFactory.Circle);
+                    icon.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(22, 0), new Vector2(84, 84), new Vector2(0, 0.5f));
+                    var letter = UIFactory.Text(icon.transform, "Letra", ResourceLetter(r), 30, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
+                    letter.rectTransform.Stretch();
+                    lbl.rectTransform.Stretch(126, 12, 22, 12);
+                    lbl.alignment = TextAlignmentOptions.MidlineLeft;
+                    lbl.enableAutoSizing = false;
+                    lbl.fontSize = 30;
+                    lbl.text = "<b>" + o.label + "</b>\n" + UIFactory.Colored("<b>" + MinorEventRules.ResourceName(r) + " −" + o.cost + "</b>", Theme.Bad) +
+                               (o.enabled ? "" : "\n" + UIFactory.Colored("<size=20>No disponible: " + o.disabledReason + "</size>", Theme.Bad));
+                    continue;
+                }
                 string text = "<size=30><b>" + o.label + "</b></size>";
                 if (!string.IsNullOrEmpty(o.details)) text += "\n<i>" + o.details + "</i>";
                 if (!string.IsNullOrEmpty(o.costs)) text += "\n" + o.costs;

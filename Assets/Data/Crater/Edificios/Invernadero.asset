@@ -15,8 +15,8 @@ MonoBehaviour:
   stats:
     id: 1
     name: "Invernadero"
-    energy: -10
-    oxygen: 4
+    energy: -12
+    oxygen: 2
     food: 8
     water: -2
     priority: 2

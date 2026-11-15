@@ -36,7 +36,8 @@ namespace Crater.Systems
                 "Panel solar: +" + c.Get(BuildingId.Solar).energy + " energía por día\n" +
                 "Invernadero: " + Num.Signed(c.Get(BuildingId.Greenhouse).energy) + " energía, +" + c.Get(BuildingId.Greenhouse).oxygen + " oxígeno, +" + c.Get(BuildingId.Greenhouse).food + " comida, " + Num.Signed(c.Get(BuildingId.Greenhouse).water) + " agua\n" +
                 "Reciclador: " + Num.Signed(c.Get(BuildingId.Recycler).energy) + " energía, +" + c.Get(BuildingId.Recycler).oxygen + " oxígeno, " + Num.Signed(c.Get(BuildingId.Recycler).water) + " agua\n" +
-                "Vivienda: " + Num.Signed(c.Get(BuildingId.Habitat).energy) + " energía; encendida la integridad sube +" + c.habitatUpkeepGain + " por día, apagada baja −" + c.habitatOffLoss + "\n" +
+                "Vivienda: " + Num.Signed(c.Get(BuildingId.Habitat).energy) + " energía; apagada o sin energía: Salud −" + c.habitatOffHealthLoss + " por día\n" +
+                "Eventos menores: unos " + Num.Round(c.TotalTurns * c.minorEventsPerTurn) + " por misión, cada uno con dos opciones que cuestan recursos distintos\n" +
                 "Cada astronauta: −" + c.oxygenPerAstronaut + " oxígeno y −" + c.foodPerAstronaut + " comida por día\n" +
                 "Sin oxígeno o sin comida: salud −" + c.starvingHealthLoss + " por día\n" +
                 "Rover: +" + c.roverIcePerTurn + " agua por día (hielo)\n" +

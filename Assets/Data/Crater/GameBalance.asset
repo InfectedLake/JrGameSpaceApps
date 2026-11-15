@@ -24,13 +24,13 @@ MonoBehaviour:
     maxBatteries: 4
     resourceMax: 100
     alertThreshold: 25
-    oxygenPerAstronaut: 1
-    foodPerAstronaut: 1
+    oxygenPerAstronaut: 2
+    foodPerAstronaut: 2
     starvingHealthLoss: 20
     buildings:
     - id: 0
       name: Panel solar
-      energy: 25
+      energy: 23
       oxygen: 0
       food: 0
       water: 0
@@ -39,8 +39,8 @@ MonoBehaviour:
       essential: 1
     - id: 1
       name: Invernadero
-      energy: -10
-      oxygen: 4
+      energy: -12
+      oxygen: 2
       food: 8
       water: -2
       priority: 2
@@ -48,7 +48,7 @@ MonoBehaviour:
       essential: 1
     - id: 2
       name: Reciclador de aire
-      energy: -20
+      energy: -22
       oxygen: 10
       food: 0
       water: -4
@@ -69,14 +69,14 @@ MonoBehaviour:
     roverIcePerTurn: 6
     lowHabitatThreshold: 25
     lowHabitatHealthLoss: 5
-    healthRecovery: 5
+    healthRecovery: 2
     healthRecoveryHabitatMin: 50
     cycles: 6
     turnsPerCycle: 4
     moraleCycle: 4
     moraleHabitatLoss: 10
     habitatUpkeepGain: 2
-    habitatOffLoss: 5
+    habitatOffHealthLoss: 3
     emergencyBatteryEnergy: 20
     batteryRechargePerTurn: 1
     radiationDamagePerIntensity: 12
