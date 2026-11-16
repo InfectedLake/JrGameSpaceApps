@@ -23,16 +23,15 @@ namespace Crater.Systems
             return o;
         }
 
-        public static string IntensityName(int i) => i >= 3 ? "Alta" : (i == 2 ? "Media" : "Baja");
 
         public static string DefenseName(RadiationDefense d)
         {
             switch (d)
             {
-                case RadiationDefense.WaterWalls: return "Paredes de agua";
-                case RadiationDefense.RegolithIgloo: return "Refugio de regolito";
-                case RadiationDefense.Bunker: return "Refugio interior";
-                default: return "Sin protección";
+                case RadiationDefense.WaterWalls: return Loc.T("EVENT_SOLAR_OPT0_TITLE");
+                case RadiationDefense.RegolithIgloo: return Loc.T("EVENT_SOLAR_OPT1_TITLE");
+                case RadiationDefense.Bunker: return Loc.T("EVENT_SOLAR_OPT2_TITLE");
+                default: return Loc.T("EVENT_SOLAR_OPT3_TITLE");
             }
         }
     }

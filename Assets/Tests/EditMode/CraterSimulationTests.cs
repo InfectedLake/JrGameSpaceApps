@@ -60,7 +60,7 @@ namespace Crater.Tests
             Assert.AreEqual(BuildingVisual.NoPower, r.Get(BuildingId.Greenhouse).visual);
             Assert.AreEqual(BuildingVisual.NoPower, r.Get(BuildingId.Habitat).visual);
             Assert.AreEqual(1, r.after.energy);
-            Assert.IsTrue(r.health.labels.Contains("vivienda apagada")); // vivienda sin energía: Salud −3
+            Assert.IsTrue(r.health.labels.Contains(Loc.T("SRC_HABITAT_OFF"))); // vivienda sin energía: Salud −3
             Assert.IsTrue(r.Get(BuildingId.Greenhouse).on);
         }
 
@@ -451,6 +451,66 @@ namespace Crater.Tests
             s.schedule.Clear(); s.schedule.Add(e);
             s.day = 11; Assert.AreEqual(EventPhase.Scheduled, EventScheduler.Phase(e, s, c));
             s.day = 12; Assert.AreEqual(EventPhase.Active, EventScheduler.Phase(e, s, c));
+        }
+
+        // ---------------- Localización (inglés / español)
+        [Test]
+        public void Loc_InglesPorDefecto_YTablasCompletas()
+        {
+            Assert.AreEqual(Language.English, Loc.Current);
+            foreach (var kv in Loc.All)
+            {
+                Assert.IsTrue(!string.IsNullOrEmpty(kv.Value[0]), "falta inglés: " + kv.Key);
+                Assert.IsTrue(!string.IsNullOrEmpty(kv.Value[1]), "falta español: " + kv.Key);
+                // Las plantillas usan los mismos parámetros en los dos idiomas.
+                string en = string.Join(",", System.Text.RegularExpressions.Regex.Matches(kv.Value[0], @"\{\d\}").Cast<System.Text.RegularExpressions.Match>().Select(m => m.Value).OrderBy(x => x));
+                string es = string.Join(",", System.Text.RegularExpressions.Regex.Matches(kv.Value[1], @"\{\d\}").Cast<System.Text.RegularExpressions.Match>().Select(m => m.Value).OrderBy(x => x));
+                Assert.AreEqual(en, es, "parámetros distintos en " + kv.Key);
+            }
+        }
+
+        [Test]
+        public void Loc_CambioDeIdioma_TextosDinamicosYPlurales()
+        {
+            try
+            {
+                Assert.AreEqual("CYCLE 2 OF 6", Loc.T("HUD_CYCLE", 2, 6));
+                Assert.AreEqual("1 day", Loc.Days(1));
+                Assert.AreEqual("2 days", Loc.Days(2));
+                Assert.AreEqual("WARNING! Earth's Shadow will arrive in 2 days.", Loc.T("ALERT_SHADOW", Loc.T("ALERT_IN_DAYS", Loc.Days(2))));
+                int changes = 0;
+                System.Action count = () => changes++;
+                Loc.Changed += count;
+                Loc.Set(Language.Spanish);
+                Loc.Set(Language.Spanish);   // repetir el mismo idioma no vuelve a avisar
+                Loc.Changed -= count;
+                Assert.AreEqual(1, changes);
+                Assert.AreEqual("CICLO 2 DE 6", Loc.T("HUD_CYCLE", 2, 6));
+                Assert.AreEqual("1 día", Loc.Days(1));
+                Assert.AreEqual("¡ALERTA! La Sombra de la Tierra llegará en 2 días.", Loc.T("ALERT_SHADOW", Loc.T("ALERT_IN_DAYS", Loc.Days(2))));
+                // Lo guardado en la partida como clave se muestra en el idioma actual; un texto antiguo se muestra tal cual.
+                Assert.AreEqual("Se acabó el oxígeno de la base.", Loc.Stored("DEFEAT_OXYGEN"));
+                Assert.AreEqual("texto antiguo", Loc.Stored("texto antiguo"));
+            }
+            finally { Loc.Set(Language.English); }
+        }
+
+        [Test]
+        public void Loc_LaSimulacionUsaElIdiomaActual_SinCambiarResultados()
+        {
+            var c = Cfg();
+            var s = NewState(c); s.energy = 0;
+            var en = TurnSimulator.Simulate(s, c);
+            try
+            {
+                Loc.Set(Language.Spanish);
+                var es = TurnSimulator.Simulate(s, c);
+                Assert.AreEqual(en.after.energy, es.after.energy);
+                Assert.AreEqual(en.after.health, es.after.health);
+                Assert.IsTrue(es.health.labels.Contains("vivienda apagada"));
+                Assert.IsTrue(en.health.labels.Contains("habitat off"));
+            }
+            finally { Loc.Set(Language.English); }
         }
 
         [Test]

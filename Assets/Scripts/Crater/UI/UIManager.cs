@@ -74,12 +74,14 @@ namespace Crater.UI
             G.events.PromptChanged += ShowPrompt;
             // Al resolverse un evento se repite su animación; el efecto de sonido ya sonó al ocurrir (EventIntro).
             G.events.EffectRequested += (type, intensity) => fx.Play(type, intensity);
+            Loc.Changed += OnLanguageChanged;
             G.nasa.Initialize(G.saves.UseLiveData);
             ShowMenu();
         }
 
         void OnDestroy()
         {
+            Loc.Changed -= OnLanguageChanged;   // Loc es estático: siempre hay que soltarlo, aunque GameManager ya no exista
             if (G == null) return;
             G.StateChanged -= RefreshGame;
             G.Noticed -= Toast;
@@ -199,7 +201,7 @@ namespace Crater.UI
             // Barra superior original: casillas Comida (agua y comida), Energía, Oxígeno y Salud (vivienda).
             var hud = UIFactory.Rect(scr, "HUD").Stretch();
             if (art.topBar != null) UIFactory.Image(hud, "FondoRecursos", Color.white, art.topBar).rectTransform.TopLeft(CraterLayout.TopBar, art.topBar.rect.size);
-            string[] names = { "Comida", "Energía", "Oxígeno", "Salud" };
+            string[] names = { "RESOURCE_FOOD", "RESOURCE_ENERGY", "RESOURCE_OXYGEN", "RESOURCE_HEALTH" };
             Sprite[] slots = { art.slotFood, art.slotEnergy, art.slotOxygen, art.slotHealth };
             Sprite[] icons = { art.iconFood, art.iconEnergy, art.iconOxygen, art.iconHealth };
             for (int i = 0; i < 4; i++)
@@ -221,14 +223,14 @@ namespace Crater.UI
             days.rectTransform.Stretch();
             var dark = new Color(0.25f, 0.15f, 0.02f);
             var box = CraterLayout.DayBox;
-            var dayLabel = UIFactory.Text(counter, "DayLabel", "DÍA", 22, dark, TextAlignmentOptions.Center, FontStyles.Bold);
+            var dayLabel = UIFactory.Text(counter, "DayLabel", "", 22, dark, TextAlignmentOptions.Center, FontStyles.Bold).L("HUD_DAY");
             dayLabel.rectTransform.TopLeft(new Vector2(box.xMin + 4, box.yMin + 3), new Vector2(box.width - 8, 22));
             dayText = UIFactory.Text(counter, "DayNumber", "01/24", 40, dark, TextAlignmentOptions.Center, FontStyles.Bold);
             dayText.rectTransform.TopLeft(new Vector2(box.xMin + 4, box.yMin + 25), new Vector2(box.width - 8, box.height - 28));
             dayText.textWrappingMode = TextWrappingModes.NoWrap;
             dayText.enableAutoSizing = true; dayText.fontSizeMin = 28; dayText.fontSizeMax = 40;
             var low = CraterLayout.DayLower;
-            cycleText = UIFactory.Text(counter, "CycleLabel", "CICLO 1 DE 6", 24, new Color(0.99f, 0.92f, 0.75f), TextAlignmentOptions.Center, FontStyles.Bold);
+            cycleText = UIFactory.Text(counter, "CycleLabel", "", 24, new Color(0.99f, 0.92f, 0.75f), TextAlignmentOptions.Center, FontStyles.Bold);
             cycleText.rectTransform.TopLeft(new Vector2(low.xMin + 8, low.yMin + 14), new Vector2(low.width - 16, 60));
             cycleText.textWrappingMode = TextWrappingModes.NoWrap;
             cycleText.enableAutoSizing = true; cycleText.fontSizeMin = 16; cycleText.fontSizeMax = 24;
@@ -240,8 +242,9 @@ namespace Crater.UI
             endDayButton.targetGraphic = next;
             var nc = endDayButton.colors; nc.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.8f); endDayButton.colors = nc;
             endDayButton.onClick.AddListener(() => { if (!G.turns.CanEndDay(out _)) return; CloseBuildingCard(true); UIFactory.ClickSound?.Invoke(); G.turns.EndDay(); });
-            var nextLabel = UIFactory.Text(next.transform, "Texto", "TERMINAR\nDÍA", 40, new Color(0.45f, 0.20f, 0.02f), TextAlignmentOptions.Center, FontStyles.Bold);
+            var nextLabel = UIFactory.Text(next.transform, "Texto", "", 40, new Color(0.45f, 0.20f, 0.02f), TextAlignmentOptions.Center, FontStyles.Bold).L("HUD_END_DAY");
             nextLabel.rectTransform.TopLeft(new Vector2(175, 20), new Vector2(235, 142));
+            nextLabel.enableAutoSizing = true; nextLabel.fontSizeMin = 28; nextLabel.fontSizeMax = 40;
             endDayHint = UIFactory.Text(hud, "Pista", "", 22, Color.white, TextAlignmentOptions.Right, FontStyles.Bold);
             endDayHint.rectTransform.TopLeft(new Vector2(1000, 812), new Vector2(900, 34));
 
@@ -271,7 +274,7 @@ namespace Crater.UI
         {
             G.turns.Busy = true;
             RefreshGame();
-            transitionText.text = r.after.outcome == Outcome.Playing ? "DÍA " + r.after.day.ToString("00") : "";
+            transitionText.text = r.after.outcome == Outcome.Playing ? Loc.T("HUD_DAY_N", r.after.day.ToString("00")) : "";
             float t = 0;
             while (t < 0.9f)
             {
@@ -296,7 +299,7 @@ namespace Crater.UI
             indicators[2].Show(s.oxygen, c.resourceMax, p.oxygen, c.alertThreshold);
             indicators[3].Show(s.health, c.resourceMax, p.health, c.alertThreshold);
             dayText.text = Mathf.Min(s.day, s.totalTurns).ToString("00") + "/" + s.totalTurns.ToString("00");
-            cycleText.text = "CICLO " + s.Cycle + " DE " + s.TotalCycles;
+            cycleText.text = Loc.T("HUD_CYCLE", s.Cycle, s.TotalCycles);
 
             // Eventos sobre la misma base: variantes y capas según el estado del día y la ventana abierta.
             var prompt = G.events.Current;
@@ -399,7 +402,7 @@ namespace Crater.UI
             UIFactory.Size(spacer, 0).flexibleHeight = 1;
             cardToggle = UIFactory.Button(body, "Encender", "", Theme.Good, ink, 40, () => { if (cardId.HasValue) G.buildings.Toggle(cardId.Value); });
             UIFactory.Size(cardToggle, 120, -1, -1, 120);
-            var close = UIFactory.Button(body, "Cerrar", "CERRAR", Color.white, ink, 32, () => CloseBuildingCard(false));
+            var close = UIFactory.Button(body, "Cerrar", "", Color.white, ink, 32, () => CloseBuildingCard(false)).L("CLOSE");
             UIFactory.Size(close, 100, -1, -1, 100);
             card.gameObject.SetActive(false);
         }
@@ -454,22 +457,22 @@ namespace Crater.UI
             var data = G.GetBuilding(id);
             var st = G.Config.Get(id);
             var r = G.buildings.Result(id);
-            cardName.text = st.name;
+            cardName.text = data.LName();
             cardStatus.text = BuildingManager.StatusLabel(r.visual) + (string.IsNullOrEmpty(r.reason) ? "" : ": " + r.reason);
             cardStatus.color = r.visual == BuildingVisual.Working ? Theme.Good : r.visual == BuildingVisual.Off ? new Color(0.35f, 0.35f, 0.35f)
                              : r.visual == BuildingVisual.NoPower || r.visual == BuildingVisual.NoWater ? Theme.Bad : new Color(0.65f, 0.40f, 0.0f);
-            cardInfo.text = data.description + " " + data.howItWorks;
+            cardInfo.text = data.LDescription() + " " + data.LHowItWorks();
 
             var parts = new List<string>();
-            if (st.energy != 0) parts.Add("Energía " + Num.Signed(st.energy));
-            if (st.oxygen != 0) parts.Add("Oxígeno " + Num.Signed(st.oxygen));
-            if (st.food != 0) parts.Add("Comida " + Num.Signed(st.food));
-            cardNumbers.text = string.Join("   ", parts) + " por día";
+            if (st.energy != 0) parts.Add(Loc.T("RESOURCE_ENERGY") + " " + Num.Signed(st.energy));
+            if (st.oxygen != 0) parts.Add(Loc.T("RESOURCE_OXYGEN") + " " + Num.Signed(st.oxygen));
+            if (st.food != 0) parts.Add(Loc.T("RESOURCE_FOOD") + " " + Num.Signed(st.food));
+            cardNumbers.text = Loc.T("CARD_PER_DAY", string.Join("   ", parts));
 
             bool on = G.State.IsOn(id);
             cardToggle.interactable = G.buildings.CanToggle(out _);
             cardToggle.GetComponent<Image>().color = UIFactory.ArtTint(on ? Theme.OffGray : Theme.Good);
-            cardToggle.Label().text = on ? "APAGAR" : "ENCENDER";
+            cardToggle.Label().text = Loc.T(on ? "CARD_TURN_OFF" : "CARD_TURN_ON");
         }
 
         // ------------------------------------------------------------------ Avisos temporales

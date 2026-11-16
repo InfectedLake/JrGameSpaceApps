@@ -394,3 +394,31 @@ Verificado con una prueba PlayMode de Unity 6000.3 (copia del proyecto): menú �
 - El efecto del acontecimiento suena una sola vez, cuando aparece el fenómeno (`EventIntro`).
 
 Verificado con tests del núcleo (alerta a 2 días, fases, efectos de varios turnos, solapamiento) y con una prueba PlayMode en Unity con días reales. Recorrido: alerta → cerrar → edificios → preparación → eclipse (efecto una vez) → decisión → efectos de varios turnos → fundido a gameplay → continuar partida guardada.
+
+## Localización inglés / español (16-nov-2026)
+
+### Sistema
+- **`Crater.Core.Loc`** (C# puro): tabla central clave → (inglés, español) en `LocTables.UI/Gameplay/Events/Content/Science.cs`, con unas 410 claves.
+  - Funciones: plantillas `{0}`, plurales `Loc.Days(n)`, `TOr` (clave o texto del asset) y `Stored` (claves guardadas en la partida).
+  - Al estar en el núcleo, la simulación y las reglas también hablan el idioma activo.
+- **Idioma por defecto: inglés.** `LanguageSettings` lee PlayerPrefs `crater.lang` una sola vez al arrancar y solo lo escribe cuando el jugador elige otro idioma.
+- **`LocText`:** componente que vuelve a escribir un texto fijo cuando cambia el idioma. Se usa con `texto.L("CLAVE")` o `boton.L(() => ...)`.
+- **Ventanas de eventos:** `EventPrompt` y `PromptOption` guardan funciones, no textos. Al cambiar el idioma, la ventana abierta se vuelve a dibujar con el mismo objeto: la decisión sigue pendiente y la selección de baterías se conserva.
+- **Contenido de ScriptableObjects** (eventos, edificios, ciencia) y eventos menores: `LocalizedContent` / `MinorEventRules.Name` buscan la clave por id. Si no existe, muestran el texto del asset.
+- **Datos guardados en la partida:** `defeatCause` y `emergencyReason` se guardan como clave y se muestran en el idioma actual.
+- **Cambio de idioma** (`UIManager.OnLanguageChanged`): actualiza el HUD, la ficha de edificio, opciones, configuración, ciencia, la pantalla final y la ventana abierta. Retira los avisos temporales y no toca turnos, música, eventos, recursos ni nombres escritos por el jugador.
+
+### Selector
+- **ENGLISH | ESPAÑOL**, sin banderas. Está en la esquina inferior izquierda del menú principal y en la fila "Language / Idioma" de Opciones (menú principal y pausa).
+
+### Sprites y fuentes
+- Ningún sprite tiene texto incorporado: todo el texto es TextMeshPro.
+- LiberationSans muestra á é í ó ú ü ñ ¿ ¡ (0 avisos de caracteres faltantes en las pruebas).
+
+### Verificado
+- **Tests del núcleo** (30 en total): idioma por defecto, tablas completas en los dos idiomas, mismos parámetros en cada plantilla, textos dinámicos y plurales, y la simulación con resultados idénticos en ambos idiomas.
+- **Prueba PlayMode en Unity con la escena real:**
+  - 20 pantallas por idioma: menú, configuración, opciones, créditos, ciencia, tutorial, HUD, ficha, pausa, confirmación, evento menor, alertas, baterías, resultados, victoria y derrota.
+  - Detección automática de textos recortados o desbordados: ninguno.
+  - Cambio en vivo con la ventana del eclipse abierta.
+  - Persistencia: recargar la escena y reabrir el juego.

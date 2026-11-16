@@ -10,8 +10,8 @@ namespace Crater.Core
         public static bool CanUseBattery(GameState s, BalanceConfig c, out string reason)
         {
             reason = "";
-            if (s.batteries <= 0) { reason = "No quedan baterías"; return false; }
-            if (!s.emergency && s.energy > c.alertThreshold) { reason = "Solo con energía baja (" + c.alertThreshold + " o menos)"; return false; }
+            if (s.batteries <= 0) { reason = Loc.T("REASON_NO_BATTERIES"); return false; }
+            if (!s.emergency && s.energy > c.alertThreshold) { reason = Loc.T("REASON_ONLY_LOW_ENERGY", c.alertThreshold); return false; }
             return true;
         }
 
@@ -26,9 +26,9 @@ namespace Crater.Core
         public static bool CanRepairNow(EquipmentState e, GameState s, BalanceConfig c, out string reason)
         {
             reason = "";
-            if (!e.broken || e.Repairing) { reason = "No necesita reparación"; return false; }
-            if (s.energy < c.repairNowEnergy) { reason = "Necesitas " + c.repairNowEnergy + " de energía"; return false; }
-            if (s.water < c.repairNowWater) { reason = "Necesitas " + c.repairNowWater + " de agua"; return false; }
+            if (!e.broken || e.Repairing) { reason = Loc.T("REASON_NO_REPAIR_NEEDED"); return false; }
+            if (s.energy < c.repairNowEnergy) { reason = Loc.T("NEED_ENERGY", c.repairNowEnergy); return false; }
+            if (s.water < c.repairNowWater) { reason = Loc.T("NEED_WATER", c.repairNowWater); return false; }
             return true;
         }
 
@@ -43,7 +43,7 @@ namespace Crater.Core
         public static bool CanRepairSlow(EquipmentState e, out string reason)
         {
             reason = "";
-            if (!e.broken || e.Repairing) { reason = "No necesita reparación"; return false; }
+            if (!e.broken || e.Repairing) { reason = Loc.T("REASON_NO_REPAIR_NEEDED"); return false; }
             return true;
         }
 

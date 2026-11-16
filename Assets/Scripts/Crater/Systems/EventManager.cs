@@ -56,28 +56,33 @@ namespace Crater.Systems
             pending.Add(MinorPrompt(due, def));
         }
 
+        // Atajos: texto de una clave (con parámetros fijos) evaluado al mostrarse.
+        static Func<string> L(string key) => () => Loc.T(key);
+        static Func<string> L(string key, params object[] args) => () => Loc.T(key, args);
+
         EventPrompt MinorPrompt(ScheduledMinor due, MinorEventDef def)
         {
             var p = new EventPrompt
             {
                 kind = PromptKind.Choice,
-                title = def.name,
-                body = def.description,
+                title = () => MinorEventRules.Name(def),
+                body = () => MinorEventRules.Description(def),
                 color = new Color(0.32f, 0.45f, 0.62f),
             };
             for (int i = 0; i < 2; i++)
             {
                 var o = def.Option(i);
-                var opt = new PromptOption { label = o.text, resource = o.resource, cost = o.cost };
+                int index = i;
+                var opt = new PromptOption { label = () => MinorEventRules.OptionText(def, index), resource = o.resource, cost = o.cost };
                 opt.enabled = MinorEventRules.CanPay(S, o);
-                if (!opt.enabled) opt.disabledReason = "no hay suficiente " + MinorEventRules.ResourceName(o.resource).ToLowerInvariant();
+                if (!opt.enabled) opt.disabledReason = () => Loc.T("MINOR_NOT_ENOUGH", MinorEventRules.ResourceName(o.resource).ToLowerInvariant());
                 opt.onChoose = () =>
                 {
                     MinorEventRules.Apply(S, o, C);
                     due.resolved = true;
                     string loss = MinorEventRules.ResourceName(o.resource) + " −" + o.cost;
-                    G.Decision(def.name + ": " + o.text + " (" + loss + ")");
-                    G.Notify(def.name + " resuelto. " + loss + ".", NoticeKind.Info);
+                    G.Decision(MinorEventRules.Name(def) + ": " + MinorEventRules.OptionText(def, index) + " (" + loss + ")");
+                    G.Notify(Loc.T("MINOR_RESOLVED", MinorEventRules.Name(def), loss), NoticeKind.Info);
                 };
                 p.options.Add(opt);
             }
@@ -131,29 +136,29 @@ namespace Crater.Systems
 
         EventPrompt EmergencyPrompt()
         {
+            bool noEnergy = S.energy <= 0;
             var p = new EventPrompt
             {
                 kind = PromptKind.Choice,
-                title = "¡Emergencia!",
-                subtitle = "Falló: " + S.emergencyReason,
-                body = S.energy <= 0
-                    ? "La base se quedó sin energía. Apagamos el invernadero para ahorrar."
-                    : "La vivienda está muy dañada. Mantén la vivienda encendida para repararla poco a poco.",
+                title = L("EMERGENCY_TITLE"),
+                subtitle = () => Loc.T("EMERGENCY_FAILED", Loc.Stored(S.emergencyReason)),
+                body = noEnergy ? L("EMERGENCY_BODY_ENERGY") : L("EMERGENCY_BODY_HABITAT"),
                 color = new Color(0.90f, 0.30f, 0.30f),
             };
             var battery = new PromptOption
             {
-                label = "Conectar una batería",
-                costs = "+" + C.emergencyBatteryEnergy + " energía. Quedará una batería menos para un eclipse.",
+                label = L("EMERGENCY_BATTERY"),
+                costs = L("EMERGENCY_BATTERY_COST", C.emergencyBatteryEnergy),
                 onChoose = () => G.batteries.UseEmergency(),
             };
-            battery.enabled = BaseActions.CanUseBattery(S, C, out battery.disabledReason);
+            battery.enabled = BaseActions.CanUseBattery(S, C, out _);
+            battery.disabledReason = () => { BaseActions.CanUseBattery(S, C, out var r); return r; };
             p.options.Add(battery);
             p.options.Add(new PromptOption
             {
-                label = "Seguir sin batería",
-                costs = "Apaga lo que no necesites. Los paneles producirán energía mañana.",
-                onChoose = () => G.Decision("Emergencia: continuó sin usar batería"),
+                label = L("EMERGENCY_CONTINUE"),
+                costs = L("EMERGENCY_CONTINUE_COST"),
+                onChoose = () => G.Decision(Loc.T("DECISION_EMERGENCY_NO_BATTERY")),
             });
             return p;
         }
@@ -168,7 +173,7 @@ namespace Crater.Systems
             {
                 S.nextEventUnwarned = false;
                 ev.warned = false;
-                G.Notify("El monitoreo estuvo apagado: no sabremos qué viene.", NoticeKind.Warning);
+                G.Notify(Loc.T("NOTICE_MONITORING_OFF"), NoticeKind.Warning);
                 return;
             }
             ev.warned = true;
@@ -230,7 +235,7 @@ namespace Crater.Systems
                 kind = kind,
                 eventType = ev.type,
                 intensity = ev.intensity,
-                title = d.title,
+                title = () => d.LTitle(),
                 color = d.color,
                 image = d.image,
             };
@@ -238,20 +243,18 @@ namespace Crater.Systems
             if (ev.type == CraterEventType.SolarRadiation && ev.dataKind != DataKind.Game)
             {
                 p.dataKind = ev.dataKind;
-                p.dataLabel = ev.dataKind == DataKind.Live
-                    ? "Basada en una llamarada real detectada por NASA (datos en vivo)."
-                    : "Basada en una tormenta solar real del pasado (datos archivados de NASA).";
+                p.dataLabel = ev.dataKind == DataKind.Live ? L("DATA_LIVE_STORM") : L("DATA_ARCHIVE_STORM");
             }
             return p;
         }
 
-        EventPrompt Result(ScheduledEvent ev, string subtitle, string body)
+        EventPrompt Result(ScheduledEvent ev, Func<string> subtitle, Func<string> body)
         {
             var p = Base(ev, PromptKind.Info);
             p.subtitle = subtitle;
             p.body = body;
-            p.dataLabel = "";
-            p.options.Add(new PromptOption { label = "Volver a la base" });
+            p.dataLabel = null;
+            p.options.Add(new PromptOption { label = L("BACK_TO_BASE") });
             return p;
         }
 
@@ -267,18 +270,18 @@ namespace Crater.Systems
             EffectRequested?.Invoke(ev.type, ev.intensity);
         }
 
-        static string Strength(int intensity) => intensity >= 3 ? "muy fuerte" : (intensity == 2 ? "fuerte" : "débil");
+        static string Strength(int intensity) => Loc.T(intensity >= 3 ? "STRENGTH_VERY_STRONG" : intensity == 2 ? "STRENGTH_STRONG" : "STRENGTH_WEAK");
 
-        /// <summary>Texto de la alerta anticipada, p. ej. "¡ALERTA! Una tormenta solar fuerte llegará en 2 días."</summary>
+        /// <summary>Texto de la alerta anticipada, p. ej. "WARNING! A strong solar storm will arrive in 2 days."</summary>
         string Alert(ScheduledEvent ev)
         {
             int days = ev.day - S.day;
-            string when = days <= 1 ? "llegará mañana." : "llegará en " + days + " días.";
+            string when = days <= 1 ? Loc.T("ALERT_TOMORROW") : Loc.T("ALERT_IN_DAYS", Loc.Days(days));
             switch (ev.type)
             {
-                case CraterEventType.SolarRadiation: return "¡ALERTA! Una tormenta solar " + Strength(ev.intensity) + " " + when;
-                case CraterEventType.Micrometeorites: return "¡ALERTA! Se aproxima una lluvia de micrometeoritos: " + when;
-                default: return "¡ALERTA! La Sombra de la Tierra " + when;
+                case CraterEventType.SolarRadiation: return Loc.T("ALERT_SOLAR", Strength(ev.intensity), when);
+                case CraterEventType.Micrometeorites: return Loc.T("ALERT_METEORS", when);
+                default: return Loc.T("ALERT_SHADOW", when);
             }
         }
 
@@ -289,29 +292,29 @@ namespace Crater.Systems
             var d = G.GetEvent(ev.type);
             var p = Base(ev, PromptKind.Choice);
             int days = ev.day - S.day;
-            p.subtitle = atWarning
-                ? Alert(ev)
-                : (ev.warned ? "¡La tormenta llegó!" : "¡La tormenta llegó sin aviso!") + " Es " + Strength(ev.intensity) + ".";
-            p.body = atWarning ? d.warningText : d.description + " ¿Cómo protegerás a tu tripulación?";
+            if (atWarning) p.subtitle = () => Alert(ev);
+            else p.subtitle = () => Loc.T(ev.warned ? "STORM_ARRIVED" : "STORM_ARRIVED_UNWARNED", Strength(ev.intensity));
+            p.body = atWarning ? (Func<string>)(() => d.LWarning()) : () => d.LDescription() + " " + Loc.T("STORM_HOW_PROTECT");
 
             foreach (RadiationDefense def in new[] { RadiationDefense.WaterWalls, RadiationDefense.RegolithIgloo, RadiationDefense.Bunker, RadiationDefense.None })
             {
+                var chosen = def;
                 var opt = new PromptOption
                 {
-                    label = RadiationSystem.DefenseName(def),
-                    details = OptionText(d, def),
-                    costs = RadiationCosts(def, ev, atWarning),
+                    label = () => RadiationSystem.DefenseName(chosen),
+                    details = () => OptionText(d, chosen),
+                    costs = () => RadiationCosts(chosen, ev, atWarning),
                 };
-                opt.enabled = RadiationRules.CanChoose(def, S, C, atWarning, out opt.disabledReason);
-                var chosen = def;
+                opt.enabled = RadiationRules.CanChoose(def, S, C, atWarning, out _);
+                opt.disabledReason = () => { RadiationRules.CanChoose(chosen, S, C, atWarning, out var r); return r; };
                 if (atWarning)
                     opt.onChoose = () =>
                     {
                         ev.choice = (int)chosen; ev.choiceDay = S.day;
                         RadiationRules.ApplyChoiceCosts(chosen, S, C);
-                        G.Decision("Preparó \"" + RadiationSystem.DefenseName(chosen) + "\" para la tormenta del día " + ev.day);
+                        G.Decision(Loc.T("DECISION_PREPARED", RadiationSystem.DefenseName(chosen), ev.day));
                         if (chosen == RadiationDefense.RegolithIgloo && S.roverTask == RoverTask.Regolith)
-                            G.Notify("El rover empezó a cubrir la vivienda con regolito.", NoticeKind.Info);
+                            G.Notify(Loc.T("NOTICE_ROVER_REGOLITH"), NoticeKind.Info);
                     };
                 else
                     opt.onChoose = () => ResolveRadiation(ev, chosen);
@@ -323,7 +326,7 @@ namespace Crater.Systems
         static string OptionText(EventData d, RadiationDefense def)
         {
             int i = def == RadiationDefense.WaterWalls ? 0 : def == RadiationDefense.RegolithIgloo ? 1 : def == RadiationDefense.Bunker ? 2 : 3;
-            return i < d.options.Count ? d.options[i].description : "";
+            return d.LOptionDesc(i);
         }
 
         /// <summary>Costos y consecuencias principales, sin fórmulas.</summary>
@@ -332,40 +335,43 @@ namespace Crater.Systems
             switch (def)
             {
                 case RadiationDefense.WaterWalls:
-                    return "Agua −" + C.waterWallWater + ". Ese día: sin comida nueva y la mitad de oxígeno." +
-                           (atWarning || ev.warned ? " Protección: muy alta." : " Sin aviso protege poco.");
+                    return Loc.T("COST_WATER_WALLS", C.waterWallWater) + " " + Loc.T(atWarning || ev.warned ? "COST_WATER_WALLS_GOOD" : "COST_WATER_WALLS_WEAK");
                 case RadiationDefense.RegolithIgloo:
-                    if (S.regolithReady) return "El refugio ya está listo. Protección: alta.";
-                    if (atWarning) return "Energía −" + C.regolithEnergy + ". El rover trabaja " + C.regolithTurns + " días (no trae hielo). Protección: alta.";
-                    return "¡No da tiempo de terminarlo! Una capa delgada puede empeorar la radiación.";
+                    if (S.regolithReady) return Loc.T("COST_REGOLITH_READY");
+                    if (atWarning) return Loc.T("COST_REGOLITH", C.regolithEnergy, Loc.Days(C.regolithTurns));
+                    return Loc.T("COST_REGOLITH_LATE");
                 case RadiationDefense.Bunker:
-                    return "Oxígeno, comida y agua −" + C.bunkerOxygen + ". La tripulación descansa mal. Un día sin producir. Protección: media.";
+                    return Loc.T("COST_BUNKER", C.bunkerOxygen);
                 default:
-                    return "No gasta nada. Protección: ninguna. La vivienda recibe todo el daño y los paneles se dañan.";
+                    return Loc.T("COST_NO_PROTECTION");
             }
         }
 
         EventPrompt StormArrived(ScheduledEvent ev)
         {
             var p = Base(ev, PromptKind.Info);
-            p.subtitle = "¡La tormenta llegó! Es " + Strength(ev.intensity) + ".";
-            p.body = "Tu protección: " + RadiationSystem.DefenseName((RadiationDefense)ev.choice) + ".";
-            p.options.Add(new PromptOption { label = "Ver qué pasó", onChoose = () => ResolveRadiation(ev, (RadiationDefense)ev.choice) });
+            p.subtitle = () => Loc.T("STORM_ARRIVED", Strength(ev.intensity));
+            p.body = () => Loc.T("STORM_YOUR_PROTECTION", RadiationSystem.DefenseName((RadiationDefense)ev.choice));
+            p.options.Add(new PromptOption { label = L("SEE_WHAT_HAPPENED"), onChoose = () => ResolveRadiation(ev, (RadiationDefense)ev.choice) });
             return p;
         }
 
         void ResolveRadiation(ScheduledEvent ev, RadiationDefense def)
         {
             var o = G.radiation.Resolve(ev, def);
-            string decision = RadiationSystem.DefenseName(def) + (ev.warned ? " (con aviso)" : " (sin aviso)");
+            string decision = RadiationSystem.DefenseName(def) + " " + Loc.T(ev.warned ? "DECISION_WITH_WARNING" : "DECISION_WITHOUT_WARNING");
             Record(ev, decision, o.summary, o.damage);
-            G.Decision("Tormenta solar: " + decision + " → Vivienda −" + o.damage);
-            string quality = o.block >= 0.7f ? "¡Muy bien protegidos!" : o.block >= 0.5f ? "Bastante protegidos." : o.block > 0f ? "Protección débil." : "Quedamos expuestos.";
-            string body = "La vivienda perdió " + o.damage + " puntos.";
-            if (def == RadiationDefense.WaterWalls) body += " Hoy no habrá comida nueva y el oxígeno será la mitad.";
-            if (def == RadiationDefense.Bunker) body += " Hoy no se produce nada y la tripulación descansa mal.";
-            if (o.block < 0f) body += " La capa de regolito era muy delgada y empeoró la radiación.";
-            if (o.electronicsDamaged) body += " ¡La radiación dañó los paneles solares!";
+            G.Decision(Loc.T("DECISION_STORM", decision, o.damage));
+            Func<string> quality = L(o.block >= 0.7f ? "RESULT_VERY_PROTECTED" : o.block >= 0.5f ? "RESULT_PROTECTED" : o.block > 0f ? "RESULT_WEAK" : "RESULT_EXPOSED");
+            Func<string> body = () =>
+            {
+                string b = Loc.T("RESULT_HABITAT_LOST", o.damage);
+                if (def == RadiationDefense.WaterWalls) b += " " + Loc.T("RESULT_WATER_WALLS_DAY");
+                if (def == RadiationDefense.Bunker) b += " " + Loc.T("RESULT_BUNKER_DAY");
+                if (o.block < 0f) b += " " + Loc.T("RESULT_THIN_LAYER");
+                if (o.electronicsDamaged) b += " " + Loc.T("RESULT_PANELS_DAMAGED");
+                return b;
+            };
             PushFront(Result(ev, quality, body));
         }
 
@@ -375,20 +381,21 @@ namespace Crater.Systems
         {
             var d = G.GetEvent(ev.type);
             var p = Base(ev, PromptKind.Choice);
-            p.subtitle = Alert(ev);
-            p.body = d.warningText;
+            p.subtitle = () => Alert(ev);
+            p.body = () => d.LWarning();
             var panels = new PromptOption
             {
-                label = "Proteger los paneles solares",
-                costs = "Ese día: Energía −" + C.stowPanelsEnergy + " y los paneles no producen. Los rovers pueden averiarse.",
+                label = () => d.LOptionTitle(0),
+                costs = L("COST_STOW_PANELS", C.stowPanelsEnergy),
             };
-            panels.enabled = MeteorRules.CanProtect(MeteorProtect.Panels, S, C, out panels.disabledReason);
-            panels.onChoose = () => { ev.choice = (int)MeteorProtect.Panels; ev.choiceDay = S.day; G.Decision("Protegerá los paneles de los micrometeoritos"); };
+            panels.enabled = MeteorRules.CanProtect(MeteorProtect.Panels, S, C, out _);
+            panels.disabledReason = () => { MeteorRules.CanProtect(MeteorProtect.Panels, S, C, out var r); return r; };
+            panels.onChoose = () => { ev.choice = (int)MeteorProtect.Panels; ev.choiceDay = S.day; G.Decision(Loc.T("DECISION_WILL_PROTECT_PANELS")); };
             var rovers = new PromptOption
             {
-                label = "Proteger los rovers",
-                costs = "Ese día: no traen hielo, Agua −" + C.stowRoversWater + " y Oxígeno −" + C.stowRoversOxygen + ". Los paneles pueden averiarse.",
-                onChoose = () => { ev.choice = (int)MeteorProtect.Rovers; ev.choiceDay = S.day; G.Decision("Protegerá los rovers de los micrometeoritos"); },
+                label = () => d.LOptionTitle(1),
+                costs = L("COST_STOW_ROVERS", C.stowRoversWater, C.stowRoversOxygen),
+                onChoose = () => { ev.choice = (int)MeteorProtect.Rovers; ev.choiceDay = S.day; G.Decision(Loc.T("DECISION_WILL_PROTECT_ROVERS")); },
             };
             p.options.Add(panels);
             p.options.Add(rovers);
@@ -397,28 +404,33 @@ namespace Crater.Systems
 
         EventPrompt MeteorArrivalPrompt(ScheduledEvent ev)
         {
+            var d = G.GetEvent(ev.type);
             var p = Base(ev, PromptKind.Info);
             var protect = ev.warned && ev.choice >= 0 ? (MeteorProtect)ev.choice : MeteorProtect.None;
             if (protect == MeteorProtect.Panels && !MeteorRules.CanProtect(protect, S, C, out _)) protect = MeteorProtect.None;
-            p.subtitle = ev.warned ? "¡Impactos!" : "¡Impactos sin aviso!";
-            p.body = protect == MeteorProtect.None ? "No hubo tiempo de guardar nada. Todo el equipo exterior está expuesto." : G.GetEvent(ev.type).description;
+            p.subtitle = L(ev.warned ? "IMPACTS" : "IMPACTS_UNWARNED");
+            p.body = protect == MeteorProtect.None ? L("IMPACTS_NOTHING_STORED") : (Func<string>)(() => d.LDescription());
             var chosen = protect;
-            p.options.Add(new PromptOption { label = "Ver qué pasó", onChoose = () => ResolveMeteors(ev, chosen) });
+            p.options.Add(new PromptOption { label = L("SEE_WHAT_HAPPENED"), onChoose = () => ResolveMeteors(ev, chosen) });
             return p;
         }
 
         void ResolveMeteors(ScheduledEvent ev, MeteorProtect protect)
         {
             var o = MeteorRules.Resolve(S, ev, protect, G.Rng, C);
-            string decision = protect == MeteorProtect.Panels ? "Protegió los paneles" : protect == MeteorProtect.Rovers ? "Protegió los rovers" : "Sin protección";
+            string decision = Loc.T(protect == MeteorProtect.Panels ? "DECISION_PROTECTED_PANELS" : protect == MeteorProtect.Rovers ? "DECISION_PROTECTED_ROVERS" : "WHY_NONE");
             Record(ev, decision, o.summary, 0);
-            var parts = new List<string>();
-            if (protect == MeteorProtect.Panels) parts.Add("Los paneles están a salvo.");
-            if (protect == MeteorProtect.Rovers) parts.Add("Los rovers están a salvo.");
-            if (o.panelsBroke) parts.Add("¡Los paneles solares se averiaron! Ahora producen la mitad.");
-            if (o.roversBroke) parts.Add("¡Los rovers se averiaron! Ahora traen la mitad de hielo.");
-            if (!o.panelsBroke && !o.roversBroke) parts.Add("¡Nada se rompió! Tuvimos suerte.");
-            var follow = new List<EventPrompt> { Result(ev, o.panelsBroke || o.roversBroke ? "Hubo daños" : "Sin daños", string.Join(" ", parts)) };
+            Func<string> body = () =>
+            {
+                var parts = new List<string>();
+                if (protect == MeteorProtect.Panels) parts.Add(Loc.T("RESULT_PANELS_SAFE"));
+                if (protect == MeteorProtect.Rovers) parts.Add(Loc.T("RESULT_ROVERS_SAFE"));
+                if (o.panelsBroke) parts.Add(Loc.T("RESULT_PANELS_BROKE"));
+                if (o.roversBroke) parts.Add(Loc.T("RESULT_ROVERS_BROKE"));
+                if (!o.panelsBroke && !o.roversBroke) parts.Add(Loc.T("RESULT_NOTHING_BROKE"));
+                return string.Join(" ", parts);
+            };
+            var follow = new List<EventPrompt> { Result(ev, L(o.panelsBroke || o.roversBroke ? "RESULT_DAMAGE" : "RESULT_NO_DAMAGE"), body) };
             if (o.panelsBroke) follow.Add(RepairPrompt(Equipment.Panels));
             if (o.roversBroke) follow.Add(RepairPrompt(Equipment.Rovers));
             PushFront(follow.ToArray());
@@ -426,27 +438,29 @@ namespace Crater.Systems
 
         EventPrompt RepairPrompt(Equipment eq)
         {
+            bool panels = eq == Equipment.Panels;
             var p = new EventPrompt
             {
                 kind = PromptKind.Choice,
                 eventType = CraterEventType.Micrometeorites,
-                title = "¿Cómo reparamos " + RoverManager.Name(eq) + "?",
-                subtitle = RoverManager.Name(eq, true) + " funcionan a la mitad",
-                body = "Las averías no son permanentes.",
+                title = L(panels ? "REPAIR_TITLE_PANELS" : "REPAIR_TITLE_ROVERS"),
+                subtitle = L(panels ? "REPAIR_SUBTITLE_PANELS" : "REPAIR_SUBTITLE_ROVERS"),
+                body = L("REPAIR_BODY"),
                 color = new Color(0.95f, 0.6f, 0.3f),
             };
             var now = new PromptOption
             {
-                label = "Reparar ahora",
-                costs = "Energía −" + C.repairNowEnergy + " y Agua −" + C.repairNowWater + ". Funcionan al 100% hoy mismo.",
+                label = L("REPAIR_NOW"),
+                costs = L("REPAIR_NOW_COST", C.repairNowEnergy, C.repairNowWater),
                 onChoose = () => G.rovers.RepairNow(eq),
             };
-            now.enabled = G.rovers.CanRepairNow(eq, out now.disabledReason);
+            now.enabled = G.rovers.CanRepairNow(eq, out _);
+            now.disabledReason = () => { G.rovers.CanRepairNow(eq, out var r); return r; };
             p.options.Add(now);
             p.options.Add(new PromptOption
             {
-                label = "Reparar con tiempo",
-                costs = "Gratis. No funcionan durante " + C.slowRepairTurns + " días y luego vuelven al 100%.",
+                label = L("REPAIR_SLOW"),
+                costs = () => Loc.T("REPAIR_SLOW_COST", Loc.Days(C.slowRepairTurns)),
                 onChoose = () => G.rovers.RepairSlow(eq),
             });
             return p;
@@ -458,9 +472,10 @@ namespace Crater.Systems
         {
             var d = G.GetEvent(ev.type);
             var p = Base(ev, PromptKind.Info);
-            p.subtitle = Alert(ev);
-            p.body = d.warningText + " Tenemos " + S.batteries + " baterías. Consejo: guarda energía.";
-            p.options.Add(new PromptOption { label = "Entendido" });
+            p.subtitle = () => Alert(ev);
+            int batteries = S.batteries;
+            p.body = () => d.LWarning() + " " + Loc.T("SHADOW_WARNING_BATTERIES", batteries);
+            p.options.Add(new PromptOption { label = L("GOT_IT") });
             return p;
         }
 
@@ -468,20 +483,25 @@ namespace Crater.Systems
         {
             var d = G.GetEvent(ev.type);
             var p = Base(ev, PromptKind.EclipseAllocation);
-            p.subtitle = ev.warned ? "La Tierra tapa al Sol" : "La Tierra tapa al Sol ¡y no hubo aviso!";
-            p.body = d.description + " Elige qué alimentar con las baterías.";
+            p.subtitle = L(ev.warned ? "SHADOW_ARRIVED" : "SHADOW_ARRIVED_UNWARNED");
+            p.body = () => d.LDescription() + " " + Loc.T("SHADOW_CHOOSE");
             p.onEclipseConfirm = powered =>
             {
                 var notes = EclipseRules.Apply(S, powered, C);
                 var off = new List<string>();
                 for (int i = 0; i < 4; i++) if (!powered[i]) off.Add(EclipseRules.SectionName((EclipseSection)i));
-                string decision = off.Count == 0 ? "Alimentó todas las secciones" : "Sin energía: " + string.Join(", ", off);
+                string decision = off.Count == 0 ? Loc.T("DECISION_ALL_POWERED") : Loc.T("DECISION_UNPOWERED", string.Join(", ", off));
                 Record(ev, decision, string.Join(" ", notes), 0);
-                G.Decision("Sombra de la Tierra: " + decision);
-                var lines = new List<string>();
-                for (int i = 0; i < 4; i++)
-                    if (!powered[i]) lines.Add(EclipseRules.SectionName((EclipseSection)i) + ": " + EclipseRules.Consequence((EclipseSection)i, false, C));
-                PushFront(Result(ev, off.Count == 0 ? "¡Todo encendido!" : "Lo que sacrificamos", string.Join("\n", lines)));
+                G.Decision(Loc.T("DECISION_SHADOW", decision));
+                var choice = (bool[])powered.Clone();
+                Func<string> lines = () =>
+                {
+                    var l = new List<string>();
+                    for (int i = 0; i < 4; i++)
+                        if (!choice[i]) l.Add(EclipseRules.SectionName((EclipseSection)i) + ": " + EclipseRules.Consequence((EclipseSection)i, false, C));
+                    return string.Join("\n", l);
+                };
+                PushFront(Result(ev, L(off.Count == 0 ? "RESULT_ALL_ON" : "RESULT_SACRIFICED"), lines));
             };
             return p;
         }

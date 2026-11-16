@@ -120,7 +120,7 @@ namespace Crater.UI
             r == ResourceKind.Energy ? Theme.Energy : r == ResourceKind.Oxygen ? Theme.Oxygen : r == ResourceKind.Food ? Theme.Food : Theme.Health;
 
         static string ResourceLetter(ResourceKind r) =>
-            r == ResourceKind.Energy ? "E" : r == ResourceKind.Oxygen ? "O2" : r == ResourceKind.Food ? "C" : "S";
+            Loc.T(r == ResourceKind.Energy ? "RES_LETTER_ENERGY" : r == ResourceKind.Oxygen ? "RES_LETTER_OXYGEN" : r == ResourceKind.Food ? "RES_LETTER_FOOD" : "RES_LETTER_HEALTH");
 
         /// <summary>Espacio flexible que empuja la sección de decisiones al fondo de la ventana.</summary>
         static void Spacer(Transform parent)
@@ -173,7 +173,7 @@ namespace Crater.UI
             if (G.events.Current != p) yield break;
 
             introStage = 1;
-            Toast(p.title + ": " + p.subtitle, NoticeKind.Warning);
+            Toast(p.Title + ": " + p.Subtitle, NoticeKind.Warning);
             UpdateMusic();                                         // la música del evento empieza con la notificación
 
             for (float t = 0; t < 1.6f; ) { if (!G.Paused) t += Time.unscaledDeltaTime; yield return null; }   // no avanza en pausa
@@ -207,17 +207,18 @@ namespace Crater.UI
             float cellH = info ? 90 : twoCols ? 196 : 128;
             float optionsH = rows * cellH + (rows - 1) * GridGap;
             if (eclipse) optionsH = 206 * 2 + GridGap + 12 + 150;   // tarjetas 2 × 2 + pie con baterías y CONFIRMAR
-            eventOverlay = Window(modalLayer, p.title, p.subtitle, new Vector2(1200, 600), p.eventType, p.image, out var body, out float width);
+            eventOverlay = Window(modalLayer, p.Title, p.Subtitle, new Vector2(1200, 600), p.eventType, p.image, out var body, out float width);
 
             // El alto de la ventana se calcula con el texto real: márgenes + encabezado + texto + decisiones.
             // Nunca supera 1000 px; si el texto no cabe, se reduce dentro de límites legibles.
             const float chrome = 85 + 112 + 14 + 36 + 20;
             float textBudget = 1000 - chrome - optionsH;
             float textH = 0;
-            if (!string.IsNullOrEmpty(p.body))
+            string bodyText = p.Body;
+            if (!string.IsNullOrEmpty(bodyText))
             {
-                var t = Line(body, p.body, 26, Theme.Ink);
-                float need = t.GetPreferredValues(p.body, width, 0).y;
+                var t = Line(body, bodyText, 26, Theme.Ink);
+                float need = t.GetPreferredValues(bodyText, width, 0).y;
                 if (need > textBudget - 30)
                 {
                     t.enableAutoSizing = true; t.fontSizeMin = 18; t.fontSizeMax = 26;
@@ -227,7 +228,8 @@ namespace Crater.UI
                 }
                 textH += need;
             }
-            if (!string.IsNullOrEmpty(p.dataLabel)) { Line(body, p.dataLabel, 19, Theme.InkSoft, FontStyles.Italic); textH += 30; }
+            string dataText = p.DataLabel;
+            if (!string.IsNullOrEmpty(dataText)) { Line(body, dataText, 19, Theme.InkSoft, FontStyles.Italic); textH += 30; }
             Spacer(body);
             float height = Mathf.Min(1000, chrome + textH + optionsH);
             ((RectTransform)eventOverlay.GetChild(0)).sizeDelta = new Vector2(1200, height);
@@ -253,7 +255,8 @@ namespace Crater.UI
             foreach (var o in p.options)
             {
                 var opt = o;
-                var b = UIFactory.Button(grid, o.label, o.label, o.enabled ? (info ? Theme.Accent : Color.white) : Theme.Disabled, Brown, 32,
+                string label = o.Label;
+                var b = UIFactory.Button(grid, "Opcion", label, o.enabled ? (info ? Theme.Accent : Color.white) : Theme.Disabled, Brown, 32,
                     () => { if (!G.Paused) G.events.Choose(opt); });
                 b.interactable = o.enabled;
                 if (info) continue;
@@ -269,16 +272,17 @@ namespace Crater.UI
                     var letter = UIFactory.Text(icon.transform, "Letra", ResourceLetter(r), 28, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
                     letter.rectTransform.Stretch();
                     lbl.Fit(120, 10, 28, 8, 20, 30);
-                    lbl.text = "<b>" + o.label + "</b>\n" + UIFactory.Colored("<b>" + MinorEventRules.ResourceName(r) + " −" + o.cost + "</b>", Theme.Bad) +
-                               (o.enabled ? "" : "\n" + UIFactory.Colored("<size=80%>No disponible: " + o.disabledReason + "</size>", Theme.Bad));
+                    lbl.text = "<b>" + label + "</b>\n" + UIFactory.Colored("<b>" + MinorEventRules.ResourceName(r) + " −" + o.cost + "</b>", Theme.Bad) +
+                               (o.enabled ? "" : "\n" + UIFactory.Colored("<size=80%>" + Loc.T("MINOR_UNAVAILABLE", o.DisabledReason) + "</size>", Theme.Bad));
                     continue;
                 }
                 lbl.Fit(28, 12, 28, 10, 16, 24);
                 lbl.alignment = TextAlignmentOptions.TopLeft;
-                string text = "<size=125%><b>" + o.label + "</b></size>";
-                if (!string.IsNullOrEmpty(o.details)) text += "\n<i>" + o.details + "</i>";
-                if (!string.IsNullOrEmpty(o.costs)) text += "\n" + o.costs;
-                if (!o.enabled && !string.IsNullOrEmpty(o.disabledReason)) text += "\n" + UIFactory.Colored("<b>No disponible: " + o.disabledReason + "</b>", Theme.Bad);
+                string text = "<size=125%><b>" + label + "</b></size>";
+                string details = o.Details, costs = o.Costs, why = o.DisabledReason;
+                if (!string.IsNullOrEmpty(details)) text += "\n<i>" + details + "</i>";
+                if (!string.IsNullOrEmpty(costs)) text += "\n" + costs;
+                if (!o.enabled && !string.IsNullOrEmpty(why)) text += "\n" + UIFactory.Colored("<b>" + Loc.T("MINOR_UNAVAILABLE", why) + "</b>", Theme.Bad);
                 lbl.text = text;
             }
         }
@@ -287,9 +291,14 @@ namespace Crater.UI
         /// Sombra de la Tierra: 4 tarjetas en cuadrícula 2 × 2 de igual tamaño, indicador de baterías y CONFIRMAR,
         /// todo dentro del panel. CONFIRMAR solo se habilita con una distribución válida y se ejecuta una sola vez.
         /// </summary>
+        // La distribución elegida se conserva si la ventana se vuelve a dibujar (por ejemplo, al cambiar de idioma).
+        EventPrompt eclipseFor;
+        bool[] eclipseSelection;
+
         void BuildEclipseAllocation(RectTransform body, float width)
         {
-            var powered = new bool[4];
+            if (eclipseFor != G.events.Current || eclipseSelection == null) { eclipseFor = G.events.Current; eclipseSelection = new bool[4]; }
+            var powered = eclipseSelection;
             var c = G.Config;
             const float cellH = 206;
             float cellW = (width - GridGap) / 2f;
@@ -317,7 +326,7 @@ namespace Crater.UI
             rh.childAlignment = TextAnchor.MiddleCenter;
             bool confirmed = false;
             Button confirm = null;
-            confirm = UIFactory.Button(row, "Confirmar", "CONFIRMAR", Theme.Accent, Brown, 34, () =>
+            confirm = UIFactory.Button(row, "Confirmar", Loc.T("CONFIRM"), Theme.Accent, Brown, 34, () =>
             {
                 if (confirmed || G.Paused || !EclipseRules.Affordable(powered, G.State.batteries, c)) return;
                 confirmed = true;                  // evita el doble clic
@@ -335,7 +344,7 @@ namespace Crater.UI
                 string pips = "";
                 for (int i = 0; i < c.maxBatteries; i++)
                     pips += i < used ? UIFactory.Colored("■", Theme.Warn) : (i < have ? UIFactory.Colored("■", Theme.Good) : UIFactory.Colored("■", Theme.Disabled));
-                status.text = "Baterías disponibles: " + have + "   " + pips + "   Usadas: " + used + " de " + have;
+                status.text = Loc.T("ECLIPSE_BATTERIES_STATUS", have, pips, used);
                 confirm.interactable = !confirmed && used <= have;
                 for (int i = 0; i < 4; i++)
                 {
@@ -344,8 +353,8 @@ namespace Crater.UI
                     cards[i].bg.color = UIFactory.ArtPanel != null ? UIFactory.ArtTint(powered[i] ? Theme.Good : Theme.OffGray)
                                                                     : (powered[i] ? new Color(0.85f, 0.95f, 0.86f) : new Color(1f, 0.90f, 0.88f));
                     cards[i].txt.text = "<size=120%><b>" + EclipseRules.SectionName(sec) + "</b></size>\n" +
-                                        "Costo: " + cost + " batería" + (cost > 1 ? "s" : "") + "\n" +
-                                        (powered[i] ? UIFactory.Colored("<b>CON ENERGÍA</b>", Theme.Good) : UIFactory.Colored("<b>SIN ENERGÍA</b>", Theme.Bad)) + "\n" +
+                                        Loc.T("ECLIPSE_COST", cost == 1 ? Loc.T("ECLIPSE_BATTERY_ONE") : Loc.T("ECLIPSE_BATTERIES", cost)) + "\n" +
+                                        (powered[i] ? UIFactory.Colored("<b>" + Loc.T("ECLIPSE_POWERED") + "</b>", Theme.Good) : UIFactory.Colored("<b>" + Loc.T("ECLIPSE_UNPOWERED") + "</b>", Theme.Bad)) + "\n" +
                                         EclipseRules.Consequence(sec, powered[i], c);
                 }
                 // La base muestra en vivo qué edificios quedarían encendidos (variantes "encendidos" del eclipse).
@@ -369,7 +378,7 @@ namespace Crater.UI
                     if (EclipseRules.Cost(powered, c) > G.State.batteries)
                     {
                         powered[idx] = false;
-                        Toast("No alcanzan las baterías. Apaga otra sección primero.", NoticeKind.Warning);
+                        Toast(Loc.T("ECLIPSE_NOT_ENOUGH"), NoticeKind.Warning);
                     }
                     Refresh();
                 });
@@ -398,12 +407,12 @@ namespace Crater.UI
             portrait.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(34, -UIFactory.TopInset / 2f), new Vector2(140, 140), new Vector2(0, 0.5f));
             var helmet = UIFactory.Image(portrait.transform, "Casco", new Color(0.30f, 0.45f, 0.75f), SpriteFactory.Circle);
             helmet.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0, 8), new Vector2(90, 70));
-            var who = UIFactory.Text(portrait.transform, "Nombre", "DIRECTOR", 16, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
+            var who = UIFactory.Text(portrait.transform, "Nombre", "", 16, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold).L("TUTORIAL_DIRECTOR");
             who.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, 14), new Vector2(140, 24));
             tutorialText = UIFactory.Text(box.transform, "Texto", "", 27, Brown).Fit(200, 86, 40, 14, 20, 28);
-            tutorialNext = UIFactory.Button(box.transform, "Siguiente", "SIGUIENTE", Theme.Accent, Brown, 24, NextTutorial);
+            tutorialNext = UIFactory.Button(box.transform, "Siguiente", "", Theme.Accent, Brown, 24, NextTutorial);
             ((RectTransform)tutorialNext.transform).Place(new Vector2(1, 0), new Vector2(-30, 16), new Vector2(240, 70), new Vector2(1, 0));
-            var skip = UIFactory.Button(box.transform, "Omitir", "OMITIR TUTORIAL", Theme.PanelSoft, Theme.InkSoft, 20, () => { G.saves.ShowTutorial = false; CloseTutorial(); });
+            var skip = UIFactory.Button(box.transform, "Omitir", "", Theme.PanelSoft, Theme.InkSoft, 20, () => { G.saves.ShowTutorial = false; CloseTutorial(); }).L("TUTORIAL_SKIP");
             ((RectTransform)skip.transform).Place(new Vector2(1, 0), new Vector2(-286, 16), new Vector2(260, 70), new Vector2(1, 0));
             ShowTutorialStep();
         }
@@ -417,8 +426,10 @@ namespace Crater.UI
 
         void ShowTutorialStep()
         {
-            tutorialText.text = DefaultContent.TutorialSteps[tutorialStep];
-            tutorialNext.Label().text = tutorialStep == DefaultContent.TutorialSteps.Length - 1 ? "¡A TRABAJAR!" : "SIGUIENTE";
+            // Se escribe con la función del paso actual: si cambia el idioma, el texto se actualiza solo.
+            int step = tutorialStep;
+            tutorialText.L(() => Loc.T("TUTORIAL_" + step));
+            tutorialNext.L(step == DefaultContent.TutorialSteps.Length - 1 ? "TUTORIAL_GO" : "TUTORIAL_NEXT");
         }
 
         RectTransform TutorialTarget()

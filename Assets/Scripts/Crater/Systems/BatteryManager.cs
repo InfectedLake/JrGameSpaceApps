@@ -24,8 +24,8 @@ namespace Crater.Systems
         {
             if (!CanUseEmergency(out _)) return;
             BaseActions.UseBattery(G.State, G.Config);
-            G.Decision("Usó una batería de emergencia (+" + G.Config.emergencyBatteryEnergy + " energía)");
-            G.Notify("Batería conectada: +" + G.Config.emergencyBatteryEnergy + " de energía.", NoticeKind.Good);
+            G.Decision(Loc.T("DECISION_EMERGENCY_BATTERY", G.Config.emergencyBatteryEnergy));
+            G.Notify(Loc.T("NOTICE_BATTERY_CONNECTED", G.Config.emergencyBatteryEnergy), NoticeKind.Good);
             G.NotifyChanged();
         }
     }

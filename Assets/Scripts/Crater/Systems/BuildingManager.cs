@@ -20,9 +20,9 @@ namespace Crater.Systems
         public bool CanToggle(out string reason)
         {
             reason = "";
-            if (!G.IsPlaying) { reason = "La misión terminó"; return false; }
-            if (G.events.HasPending) { reason = "Primero responde al evento"; return false; }
-            if (G.Paused) { reason = "Juego en pausa"; return false; }
+            if (!G.IsPlaying) { reason = Loc.T("REASON_MISSION_OVER"); return false; }
+            if (G.events.HasPending) { reason = Loc.T("REASON_ANSWER_EVENT"); return false; }
+            if (G.Paused) { reason = Loc.T("REASON_PAUSED"); return false; }
             return true;
         }
 
@@ -46,7 +46,7 @@ namespace Crater.Systems
                 if (!st.essential && G.State.buildingOn[i])
                 {
                     G.State.buildingOn[i] = false;
-                    names.Add(st.name);
+                    names.Add(Loc.Building((BuildingId)i));
                 }
             }
             return string.Join(", ", names);
@@ -56,13 +56,13 @@ namespace Crater.Systems
         {
             switch (v)
             {
-                case BuildingVisual.Off: return "APAGADO";
-                case BuildingVisual.Working: return "FUNCIONANDO";
-                case BuildingVisual.NoPower: return "SIN ENERGÍA";
-                case BuildingVisual.NoWater: return "SIN AGUA";
-                case BuildingVisual.Paused: return "EN PAUSA";
-                case BuildingVisual.Broken: return "AVERIADO";
-                default: return "INACTIVO";
+                case BuildingVisual.Off: return Loc.T("STATE_OFF");
+                case BuildingVisual.Working: return Loc.T("STATE_WORKING");
+                case BuildingVisual.NoPower: return Loc.T("STATE_NO_POWER");
+                case BuildingVisual.NoWater: return Loc.T("STATE_NO_WATER");
+                case BuildingVisual.Paused: return Loc.T("STATE_PAUSED");
+                case BuildingVisual.Broken: return Loc.T("STATE_BROKEN");
+                default: return Loc.T("STATE_INACTIVE");
             }
         }
     }

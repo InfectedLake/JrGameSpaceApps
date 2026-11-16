@@ -37,19 +37,19 @@ namespace Crater.Core
             switch (d)
             {
                 case RadiationDefense.WaterWalls:
-                    if (s.water < c.waterWallWater) { why = "No hay suficiente agua para llenar las paredes"; return 0f; }
-                    if (WaterPrepared(s, ev)) { why = "Paredes preparadas con aviso"; return c.waterBlockWarned; }
-                    why = ev.warned ? "No se prepararon a tiempo" : "Sin aviso anticipado";
+                    if (s.water < c.waterWallWater) { why = Loc.T("WHY_NOT_ENOUGH_WATER"); return 0f; }
+                    if (WaterPrepared(s, ev)) { why = Loc.T("WHY_WALLS_READY"); return c.waterBlockWarned; }
+                    why = ev.warned ? Loc.T("WHY_NOT_IN_TIME") : Loc.T("WHY_NO_WARNING");
                     return c.waterBlockUnwarned;
                 case RadiationDefense.RegolithIgloo:
-                    if (s.regolithReady) { why = "Refugio de regolito terminado"; return c.regolithBlock; }
-                    why = "Capa de regolito incompleta: radiación secundaria";
+                    if (s.regolithReady) { why = Loc.T("WHY_REGOLITH_DONE"); return c.regolithBlock; }
+                    why = Loc.T("WHY_REGOLITH_THIN");
                     return -c.regolithThinPenalty;
                 case RadiationDefense.Bunker:
-                    why = "Tripulación dentro del búnker";
+                    why = Loc.T("WHY_BUNKER");
                     return c.bunkerBlock;
                 default:
-                    why = "Sin protección";
+                    why = Loc.T("WHY_NONE");
                     return 0f;
             }
         }
@@ -60,13 +60,13 @@ namespace Crater.Core
             switch (d)
             {
                 case RadiationDefense.WaterWalls:
-                    if (!atWarning && s.water < c.waterWallWater) { reason = "Necesitas " + c.waterWallWater + " de agua"; return false; }
+                    if (!atWarning && s.water < c.waterWallWater) { reason = Loc.T("NEED_WATER", c.waterWallWater); return false; }
                     return true;
                 case RadiationDefense.RegolithIgloo:
                     if (s.regolithReady) return true;
-                    if (s.roverBusyTurns > 0) { reason = "El rover ya está ocupado"; return false; }
-                    if (s.rovers.Effective <= 0) { reason = "El rover está en reparación"; return false; }
-                    if (s.energy < c.regolithEnergy) { reason = "Necesitas " + c.regolithEnergy + " de energía"; return false; }
+                    if (s.roverBusyTurns > 0) { reason = Loc.T("REASON_ROVER_BUSY"); return false; }
+                    if (s.rovers.Effective <= 0) { reason = Loc.T("REASON_ROVER_REPAIRING"); return false; }
+                    if (s.energy < c.regolithEnergy) { reason = Loc.T("NEED_ENERGY", c.regolithEnergy); return false; }
                     return true;
                 default:
                     return true;
@@ -129,9 +129,9 @@ namespace Crater.Core
             s.ClampAll(c);
 
             int pct = Num.Round(o.block * 100);
-            o.summary = (pct >= 0 ? "Bloqueo " + pct + "%" : "La capa delgada AUMENTÓ la dosis un " + (-pct) + "%")
-                        + " (" + why + "). Vivienda −" + o.damage + ".";
-            if (o.electronicsDamaged) o.summary += " ¡La radiación dañó los paneles solares (50%)!";
+            o.summary = (pct >= 0 ? Loc.T("SUMMARY_BLOCK", pct) : Loc.T("SUMMARY_THIN_LAYER", -pct))
+                        + " (" + why + "). " + Loc.T("SUMMARY_HABITAT_LOSS", o.damage);
+            if (o.electronicsDamaged) o.summary += " " + Loc.T("SUMMARY_PANELS_DAMAGED");
             return o;
         }
     }
@@ -153,7 +153,7 @@ namespace Crater.Core
             reason = "";
             if (p == MeteorProtect.Panels && s.energy < c.stowPanelsEnergy)
             {
-                reason = "Necesitas " + c.stowPanelsEnergy + " de energía";
+                reason = Loc.T("NEED_ENERGY", c.stowPanelsEnergy);
                 return false;
             }
             return true;
@@ -183,13 +183,13 @@ namespace Crater.Core
             s.ClampAll(c);
 
             var parts = new List<string>();
-            if (p == MeteorProtect.Panels) parts.Add("Paneles guardados a salvo");
-            if (p == MeteorProtect.Rovers) parts.Add("Rovers guardados a salvo");
-            if (p == MeteorProtect.None) parts.Add("No hubo tiempo de proteger nada");
-            if (o.panelsBroke) parts.Add("¡Un impacto dañó los paneles solares! (50%)");
-            else if (panelsExposed) parts.Add("Los paneles resistieron");
-            if (o.roversBroke) parts.Add("¡Un impacto dañó los rovers! (50%)");
-            else if (roversExposed) parts.Add("Los rovers resistieron");
+            if (p == MeteorProtect.Panels) parts.Add(Loc.T("METEOR_PANELS_SAFE"));
+            if (p == MeteorProtect.Rovers) parts.Add(Loc.T("METEOR_ROVERS_SAFE"));
+            if (p == MeteorProtect.None) parts.Add(Loc.T("METEOR_NOTHING_PROTECTED"));
+            if (o.panelsBroke) parts.Add(Loc.T("METEOR_PANELS_HIT"));
+            else if (panelsExposed) parts.Add(Loc.T("METEOR_PANELS_HELD"));
+            if (o.roversBroke) parts.Add(Loc.T("METEOR_ROVERS_HIT"));
+            else if (roversExposed) parts.Add(Loc.T("METEOR_ROVERS_HELD"));
             o.summary = string.Join(". ", parts) + ".";
             return o;
         }
@@ -226,10 +226,10 @@ namespace Crater.Core
         {
             switch (sec)
             {
-                case EclipseSection.Oxygen: return "Producción de oxígeno";
-                case EclipseSection.Food: return "Producción de alimentos";
-                case EclipseSection.EnergyCenter: return "Centro de energía";
-                default: return "Monitoreo y comunicaciones";
+                case EclipseSection.Oxygen: return Loc.T("SECTION_OXYGEN");
+                case EclipseSection.Food: return Loc.T("SECTION_FOOD");
+                case EclipseSection.EnergyCenter: return Loc.T("SECTION_ENERGY");
+                default: return Loc.T("SECTION_MONITORING");
             }
         }
 
@@ -238,13 +238,13 @@ namespace Crater.Core
             switch (sec)
             {
                 case EclipseSection.Oxygen:
-                    return powered ? "La producción de oxígeno continúa." : "Oxígeno producido = 0 y Oxígeno −" + c.eclipseOxygenLoss + ".";
+                    return powered ? Loc.T("CONSEQ_OXYGEN_ON") : Loc.T("CONSEQ_OXYGEN_OFF", c.eclipseOxygenLoss);
                 case EclipseSection.Food:
-                    return powered ? "Se conserva la cosecha." : "Comida −" + Num.Round(c.eclipseFoodPenalty * 100) + "% durante " + c.eclipseFoodPenaltyTurns + " días.";
+                    return powered ? Loc.T("CONSEQ_FOOD_ON") : Loc.T("CONSEQ_FOOD_OFF", Num.Round(c.eclipseFoodPenalty * 100), Loc.Days(c.eclipseFoodPenaltyTurns));
                 case EclipseSection.EnergyCenter:
-                    return powered ? "La red eléctrica sigue estable." : "Los edificios gastan +" + Num.Round(c.eclipseEnergyOverhead * 100) + "% de energía durante " + c.eclipseEnergyOverheadTurns + " días.";
+                    return powered ? Loc.T("CONSEQ_ENERGY_ON") : Loc.T("CONSEQ_ENERGY_OFF", Num.Round(c.eclipseEnergyOverhead * 100), Loc.Days(c.eclipseEnergyOverheadTurns));
                 default:
-                    return powered ? "Las alertas siguen activas." : "Sin aviso DONKI para el próximo evento.";
+                    return powered ? Loc.T("CONSEQ_MONITOR_ON") : Loc.T("CONSEQ_MONITOR_OFF");
             }
         }
 
@@ -263,7 +263,7 @@ namespace Crater.Core
             if (!powered[(int)EclipseSection.EnergyCenter]) s.energyOverheadTurns = System.Math.Max(s.energyOverheadTurns, c.eclipseEnergyOverheadTurns);
             if (!powered[(int)EclipseSection.Monitoring]) s.nextEventUnwarned = true;
             for (int i = 0; i < 4; i++)
-                notes.Add((powered[i] ? "CON ENERGÍA - " : "SIN ENERGÍA - ") + SectionName((EclipseSection)i) + ": " + Consequence((EclipseSection)i, powered[i], c));
+                notes.Add((powered[i] ? Loc.T("ECLIPSE_POWERED") : Loc.T("ECLIPSE_UNPOWERED")) + " - " + SectionName((EclipseSection)i) + ": " + Consequence((EclipseSection)i, powered[i], c));
             s.ClampAll(c);
             return notes;
         }
