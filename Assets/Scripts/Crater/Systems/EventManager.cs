@@ -84,9 +84,18 @@ namespace Crater.Systems
             return p;
         }
 
+        /// <summary>Descarta las ventanas pendientes (al salir al menú). No aplica ninguna decisión.</summary>
+        public void Clear()
+        {
+            pending.Clear();
+            if (Current == null) return;
+            Current = null;
+            PromptChanged?.Invoke(null);
+        }
+
         public void Choose(PromptOption option)
         {
-            if (Current == null || option == null || !option.enabled) return;
+            if (Current == null || option == null || !option.enabled || G.Paused) return;
             Current = null;
             option.onChoose?.Invoke();
             Finish();
@@ -94,7 +103,7 @@ namespace Crater.Systems
 
         public void ConfirmEclipse(bool[] powered)
         {
-            if (Current == null || Current.kind != PromptKind.EclipseAllocation) return;
+            if (Current == null || Current.kind != PromptKind.EclipseAllocation || G.Paused) return;
             if (!EclipseRules.Affordable(powered, S.batteries, C)) return;
             var cb = Current.onEclipseConfirm;
             Current = null;

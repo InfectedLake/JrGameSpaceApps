@@ -161,6 +161,7 @@ namespace Crater.EditorTools
             if (set == null) { set = ScriptableObject.CreateInstance<CraterArtSet>(); AssetDatabase.CreateAsset(set, ArtPath); }
             Sprite S(string path)
             {
+                EnsureWholeSprite(SpritesRoot + path);
                 var s = AssetDatabase.LoadAssetAtPath<Sprite>(SpritesRoot + path);
                 if (s == null) Debug.LogWarning("[CRATER] No se encontró el sprite " + SpritesRoot + path);
                 return s;
@@ -168,7 +169,7 @@ namespace Crater.EditorTools
             const string g = "gamplay principal/", e = "evento eclipse/", m = "evento micrometeoritos/", t = "evento tormeta solar/edificios tormenta solar_", i = "pantalla de inicio/";
             set.background = S(g + "fondo principal.png");
             set.energy = S(g + "edificio energia.png");
-            set.food = S(g + "edificio agua y comida (añade un rover en el suelo alado del tanque de agua).png");
+            set.food = S(g + "edificio agua y comida (añade un rover en el suelo alado del tanque de agua) 1.png");   // con el rover integrado
             set.central = S(g + "edificio central.png");
             set.oxygen = S(g + "edificio oxigeno.png");
             set.habitat = S(g + "edificio vivienda.png");
@@ -197,7 +198,7 @@ namespace Crater.EditorTools
             set.iconFood = S(g + "recurso agua y comida.png");
             set.iconEnergy = S(g + "recurso energia.png");
             set.iconOxygen = S(g + "recurso oxigeno.png");
-            set.iconHealth = S(g + "recurso vivienda.png");
+            set.iconHealth = S(g + "recurso vivienda 1.png");   // cruz de salud
             set.menuBackground = S(g + "fondo menu.png");
             set.menuIcon = S(g + "menu.png");
             set.daysBackground = S(g + "fondo dias pasados.png");
@@ -211,9 +212,46 @@ namespace Crater.EditorTools
             set.buttonCredits = S(i + "boton creditos.png");
             set.buttonExit = S(i + "boton salir.png");
             set.buttonSelected = S(i + "boton seleccionado universal.png");
+            AudioClip A(string path)
+            {
+                var a = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audios/" + path);
+                if (a == null) Debug.LogWarning("[CRATER] No se encontró el audio Assets/Audios/" + path);
+                return a;
+            }
+            set.musicMenu = A("Musica/menu.mp3");
+            set.musicGame = A("Musica/main.mp3");
+            set.musicEclipse = A("Musica/eclipse.mp3");
+            set.musicTension = A("Musica/ataque(suspenso).mp3");
+            set.sfxClick = A("Efectos/botones.mp3");
+            set.sfxMeteors = A("Efectos/real meteorits.mp3");
+            set.sfxGenerator = A("Efectos/turbina (generador).mp3");
             EditorUtility.SetDirty(set);
             AssetDatabase.SaveAssets();
             return set;
+        }
+
+        /// <summary>
+        /// Las composiciones usan cada imagen completa. Si un PNG se reemplaza y Unity lo vuelve a importar en modo
+        /// Multiple (con recortes automáticos), la referencia al sprite completo se pierde y la Image se ve blanca.
+        /// Esto lo devuelve a Single y reaplica la configuración pixel art (sin tocar el archivo de imagen).
+        /// </summary>
+        static void EnsureWholeSprite(string assetPath)
+        {
+            var imp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (imp == null) return;
+            bool changed = false;
+            if (imp.textureType != TextureImporterType.Sprite) { imp.textureType = TextureImporterType.Sprite; changed = true; }
+            if (imp.spriteImportMode != SpriteImportMode.Single)
+            {
+                Debug.LogWarning("[CRATER] " + assetPath + " estaba en modo " + imp.spriteImportMode + ": se vuelve a Single (la escena usa la imagen completa).");
+                imp.spriteImportMode = SpriteImportMode.Single; changed = true;
+            }
+            if (imp.filterMode != FilterMode.Point) { imp.filterMode = FilterMode.Point; changed = true; }
+            if (imp.textureCompression != TextureImporterCompression.Uncompressed) { imp.textureCompression = TextureImporterCompression.Uncompressed; changed = true; }
+            if (imp.mipmapEnabled) { imp.mipmapEnabled = false; changed = true; }
+            if (!imp.isReadable) { imp.isReadable = true; changed = true; }
+            if (imp.maxTextureSize < 4096) { imp.maxTextureSize = 4096; changed = true; }
+            if (changed) imp.SaveAndReimport();
         }
 
         static List<T> Load<T>(string folder) where T : Object

@@ -36,7 +36,8 @@ namespace Crater.UI
 
             buildings[(int)BuildingId.Solar] = BuildingController.Create(World, BuildingId.Solar, art.energy, art.energyLit, art.energyBroken, art.waterEnergy, art.dustEnergy);
             buildings[(int)BuildingId.Greenhouse] = BuildingController.Create(World, BuildingId.Greenhouse, art.food, art.foodLit, null, art.waterFood, art.dustFood);
-            rover = RoverView.Create(World, art.rover, art.roverBroken);
+            buildings[(int)BuildingId.Greenhouse].SetLitPatch(art.food, CraterLayout.RoverPatch);   // el rover sigue visible en el eclipse
+            rover = RoverView.Create(World);
 
             var central = UIFactory.Image(World, "Nucleo", Color.white, art.central);
             if (art.central != null) central.rectTransform.TopLeft(CraterLayout.Central, art.central.rect.size);

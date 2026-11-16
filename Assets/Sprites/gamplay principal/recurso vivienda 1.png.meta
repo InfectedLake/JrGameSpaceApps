@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 876183c4447587b498facbb32c6a55b8
+guid: 11a5bb34d71a3c04db66b6a21ed45470
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3254045947536770723
-    second: recurso vivienda_0
+      213: -8401376090174697502
+    second: recurso vivienda 1_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: recurso vivienda_0
+      name: recurso vivienda 1_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 68
-        height: 83
+        width: 59
+        height: 59
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3a68ab17c81b82d20800000000000000
-      internalID: 3254045947536770723
+      spriteID: 2ef4da855f0586b80800000000000000
+      internalID: -8401376090174697502
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      recurso vivienda_0: 3254045947536770723
+      recurso vivienda 1_0: -8401376090174697502
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

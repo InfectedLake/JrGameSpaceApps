@@ -21,6 +21,7 @@ namespace Crater.UI
         Vector2 size, litOffset, litSize;
         BuildingVisual visual = BuildingVisual.Working;
         bool selectable = true;
+        bool missingSprite;
         float t;
 
         public static BuildingController Create(RectTransform world, BuildingId id, Sprite normal, Sprite lit, Sprite broken, Sprite water, Sprite dust)
@@ -41,6 +42,13 @@ namespace Crater.UI
         {
             main = UIFactory.Image(transform, "Sprite", Color.white, normal, true);
             main.rectTransform.TopLeft(Vector2.zero, size);
+            if (normal == null)
+            {
+                // Una Image sin sprite se dibuja como caja blanca: se avisa y no se muestra.
+                Debug.LogError("[CRATER] El edificio " + id + " no tiene sprite asignado en ArtSet.asset. " +
+                               "Revisa que su imagen esté en modo Single o usa CRATER > Asignar arte original.");
+                missingSprite = true;
+            }
             // Clic solo sobre píxeles opacos (la textura es legible por la configuración de importación).
             if (normal != null && normal.texture != null && normal.texture.isReadable) main.alphaHitTestMinimumThreshold = 0.5f;
             var area = CraterLayout.HitArea(id, size);
@@ -64,6 +72,23 @@ namespace Crater.UI
 
         public void SetSelectable(bool on) => selectable = on;
 
+        RectTransform litPatch;
+
+        /// <summary>
+        /// Muestra un recorte del sprite normal encima de la variante encendida (sin modificar el arte):
+        /// la variante del eclipse de agua y comida no dibuja el rover, que debe verse en todas las variantes.
+        /// </summary>
+        public void SetLitPatch(Sprite source, Rect area)
+        {
+            if (source == null || lit == null) return;
+            litPatch = UIFactory.Rect(transform, "RoverEnVariante").TopLeft(area.position, area.size);
+            litPatch.gameObject.AddComponent<RectMask2D>();
+            var img = UIFactory.Image(litPatch, "Recorte", Color.white, source);
+            img.rectTransform.TopLeft(-area.position, source.rect.size);
+            litPatch.gameObject.SetActive(false);
+            litPatch.SetSiblingIndex(main.transform.GetSiblingIndex() + 1);
+        }
+
         /// <param name="litOn">Eclipse: la sección de este edificio tiene baterías.</param>
         /// <param name="brokenOn">Micrometeoritos: equipo dañado (solo existe arte para la energía).</param>
         public void Refresh(BuildingResult r, bool litOn, bool brokenOn, bool waterOn, bool dustOn)
@@ -74,6 +99,7 @@ namespace Crater.UI
             if (litOn && lit != null) { s = lit; pos = litOffset; sz = litSize; }
             else if (brokenOn && broken != null) s = broken;
             if (main.sprite != s) main.sprite = s;
+            if (litPatch != null) litPatch.gameObject.SetActive(s == lit);
             main.rectTransform.TopLeft(pos, sz);
             if (water != null) water.gameObject.SetActive(waterOn);
             if (dust != null) dust.gameObject.SetActive(dustOn && !waterOn);
@@ -92,7 +118,7 @@ namespace Crater.UI
                 case BuildingVisual.Inactive: c = new Color(0.85f, 0.85f, 0.78f); break;
                 default: c = Color.white; break;
             }
-            main.color = c;
+            main.color = missingSprite ? Color.clear : c;
         }
     }
 

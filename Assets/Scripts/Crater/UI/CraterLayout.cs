@@ -92,8 +92,14 @@ namespace Crater.UI
         }
 
         /// <summary>Rover en el suelo, al lado del tanque de agua (README).</summary>
-        public static readonly Vector2 RoverCenter = new Vector2(1620, 1222);
-        public static readonly Vector2 RoverSize = new Vector2(120, 80);
+        /// <summary>
+        /// El sprite "edificio agua y comida … 1" ya incluye el rover sobre la explanada, junto al tanque.
+        /// Zona del rover dentro de ese sprite (diferencia con la versión anterior, píxeles del sprite):
+        /// se reutiliza para mostrar el rover encima de las variantes que no lo dibujan (eclipse).
+        /// </summary>
+        public static readonly Rect RoverPatch = new Rect(98, 304, 297, 178);
+        /// <summary>Centro del rover en el mundo (para el humo cuando está averiado o en reparación).</summary>
+        public static readonly Vector2 RoverCenter = new Vector2(1602, 1160);
 
         // Cámara: en la captura de selección el edificio se ve al doble y queda a la derecha del panel.
         public const float ZoomFactor = 2f;
@@ -103,10 +109,18 @@ namespace Crater.UI
         // Interfaz de juego (pantalla).
         public static readonly Vector2 TopBar = new Vector2(132, 8);
         public static readonly Vector2[] Slots = { new Vector2(172, 0), new Vector2(490, 0), new Vector2(812, 0), new Vector2(1130, 2) };
-        public static readonly Vector2[] Icons = { new Vector2(194, 34), new Vector2(512, 38), new Vector2(832, 34), new Vector2(1142, 34) };
+        /// <summary>Centro de cada icono de recurso (se centra cualquier sprite, p. ej. la cruz de Salud de 59 × 59).</summary>
+        public static readonly Vector2[] IconCenters = { new Vector2(226, 72), new Vector2(533, 72), new Vector2(843, 75), new Vector2(1176, 75) };
         public static readonly Vector2 MenuBackground = new Vector2(1584, 0);
         public static readonly Vector2 MenuIcon = new Vector2(1626, 54);
-        public static readonly Vector2 Days = new Vector2(1760, 204);
+        /// <summary>
+        /// Contador de días ("fondo dias pasados", 201 × 216): interior x 6–167, recuadro claro (26, 27)–(155, 98)
+        /// y después una franja transparente con borde que en la referencia queda fuera de pantalla.
+        /// Se coloca para que la parte diseñada (0–167) termine justo en el borde derecho.
+        /// </summary>
+        public static readonly Vector2 Days = new Vector2(1753, 204);
+        public static readonly Rect DayBox = Rect.MinMaxRect(26, 27, 155, 98);      // número de día
+        public static readonly Rect DayLower = Rect.MinMaxRect(6, 104, 167, 210);   // ciclo
         public static readonly Vector2 NextTurn = new Vector2(1476, 852);
         public static readonly Vector2 InfoPanelPos = new Vector2(63, 77);
         public static readonly Vector2 InfoPanelSize = new Vector2(851, 924);

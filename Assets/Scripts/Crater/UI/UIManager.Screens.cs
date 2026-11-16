@@ -54,8 +54,8 @@ namespace Crater.UI
             return scr;
         }
 
-        /// <summary>Botón con su sprite original. El sprite "boton seleccionado universal" está vacío, así que
-        /// el estado seleccionado se muestra aclarando el mismo botón (como en la captura de referencia).</summary>
+        /// <summary>Botón con su sprite original. El estado seleccionado se muestra aclarando el mismo botón
+        /// (transición de color, como en la captura de referencia).</summary>
         void MenuArtButton(RectTransform parent, Sprite sprite, Vector2 pos, string label, UnityEngine.Events.UnityAction onClick)
         {
             var img = UIFactory.Image(parent, "Boton" + label, Color.white, sprite, true);
@@ -69,6 +69,7 @@ namespace Crater.UI
             colors.pressedColor = new Color(0.75f, 0.75f, 0.75f);
             b.colors = colors;
             b.onClick.AddListener(onClick);
+            b.onClick.AddListener(() => UIFactory.ClickSound?.Invoke());   // sonido de clic (audio, no estilo)
             var t = UIFactory.Text(img.transform, "Texto", label, 44, MenuInk, TextAlignmentOptions.Center, FontStyles.Bold);
             t.rectTransform.Stretch(8, 4, 8, 4);
         }
@@ -109,18 +110,18 @@ namespace Crater.UI
             var scr = UIFactory.Rect(screensLayer, "Configuracion").Stretch();
             MenuBackdrop(scr);
             var card = UIFactory.Panel(scr, "Tarjeta", Theme.Panel);
-            card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1240, 900));
+            card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1240, 960));
             var t = UIFactory.Text(card.transform, "Titulo", "NUEVA MISIÓN", 52, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
-            t.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -30), new Vector2(1100, 70), new Vector2(0.5f, 1));
+            t.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -30 - UIFactory.TopInset), new Vector2(1100, 70), new Vector2(0.5f, 1));
 
-            var body = UIFactory.Rect(card.transform, "Cuerpo").Stretch(60, 140, 60, 120);
+            var body = UIFactory.Rect(card.transform, "Cuerpo").Stretch(84, 140, 84, 116 + UIFactory.TopInset);
             UIFactory.VStack(body.gameObject, 14);
 
             Label(body, "Nombre de la base");
             baseNameInput = UIFactory.Input(body, "NombreBase", "Base Shackleton", "Escribe un nombre...");
-            UIFactory.Size(baseNameInput, 64);
+            UIFactory.Size(baseNameInput, 78, -1, -1, 78);
 
-            Label(body, "Número de astronautas (cada uno consume 1 oxígeno y 1 comida por día)");
+            Label(body, "Número de astronautas (cada uno consume 2 de oxígeno y 2 de comida por día)");
             var crewRow = UIFactory.Rect(body, "Tripulacion");
             UIFactory.HStack(crewRow.gameObject, 14);
             UIFactory.Size(crewRow, 64);
@@ -133,7 +134,7 @@ namespace Crater.UI
             Label(body, "Nombres de los astronautas");
             var namesRow = UIFactory.Rect(body, "Nombres");
             UIFactory.HStack(namesRow.gameObject, 14);
-            UIFactory.Size(namesRow, 64);
+            UIFactory.Size(namesRow, 78, -1, -1, 78);
             for (int i = 0; i < 4; i++) nameInputs.Add(UIFactory.Input(namesRow, "Astronauta" + i, DefaultContent.DefaultAstronauts[i], "Nombre"));
 
             Label(body, "Duración de la misión (un ciclo = 4 días de gestión)");
@@ -212,36 +213,65 @@ namespace Crater.UI
         {
             var scr = UIFactory.Rect(screensLayer, "Opciones").Stretch();
             MenuBackdrop(scr);
+            // La tarjeta se ancla a la pantalla con márgenes (6% / 7%): nunca sale de la vista en ninguna resolución.
             var card = UIFactory.Panel(scr, "Tarjeta", Theme.Panel);
-            card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100, 760));
-            var t = UIFactory.Text(card.transform, "Titulo", "OPCIONES", 52, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
-            t.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -30), new Vector2(1000, 70), new Vector2(0.5f, 1));
-            var body = UIFactory.Rect(card.transform, "Cuerpo").Stretch(60, 140, 60, 120);
-            UIFactory.VStack(body.gameObject, 18);
+            card.rectTransform.anchorMin = new Vector2(0.07f, 0.06f);
+            card.rectTransform.anchorMax = new Vector2(0.93f, 0.94f);
+            card.rectTransform.offsetMin = card.rectTransform.offsetMax = Vector2.zero;
+            var t = UIFactory.Text(card.transform, "Titulo", "OPCIONES", 56, MenuInk, TextAlignmentOptions.Center, FontStyles.Bold);
+            t.rectTransform.anchorMin = new Vector2(0, 1); t.rectTransform.anchorMax = new Vector2(1, 1);
+            t.rectTransform.pivot = new Vector2(0.5f, 1);
+            t.rectTransform.offsetMin = new Vector2(80, -(30 + UIFactory.TopInset + 76)); t.rectTransform.offsetMax = new Vector2(-80, -(30 + UIFactory.TopInset));
 
+            // Cuerpo: área con desplazamiento vertical (máscara) cuyo contenido organiza AdaptiveColumns:
+            // dos columnas del mismo ancho si caben, o una sola columna en pantallas estrechas.
+            // Los anchos los asigna AdaptiveColumns: no dependen del largo de los textos.
+            var view = UIFactory.Rect(card.transform, "Cuerpo").Stretch(90, 150, 90, 140 + UIFactory.TopInset);
+            view.gameObject.AddComponent<RectMask2D>();
+            var viewHit = view.gameObject.AddComponent<Image>();
+            viewHit.color = new Color(1, 1, 1, 0.001f);
+            var scroll = view.gameObject.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 40;
+            var cols = UIFactory.Rect(view, "Columnas");
+            cols.anchorMin = new Vector2(0, 1); cols.anchorMax = new Vector2(1, 1);
+            cols.pivot = new Vector2(0.5f, 1);
+            cols.offsetMin = cols.offsetMax = Vector2.zero;
+            scroll.viewport = view;
+            scroll.content = cols;
+
+            var left = Section(cols, "SonidoYPantalla", "SONIDO Y PANTALLA");
+            BuildSettingsControls(left, 0);
+            var body = Section(cols, "DatosYPartida", "DATOS Y PARTIDA");
+            var adaptive = cols.gameObject.AddComponent<AdaptiveColumns>();
+            adaptive.left = left; adaptive.right = body;
+            adaptive.gap = 80; adaptive.minColumnWidth = 640;   // menos de 640 px por columna (p. ej. 4:3) → una sola columna
             liveToggle = UIFactory.Button(body, "Vivo", "", Theme.PanelSoft, Theme.Ink, 26, () =>
             {
                 G.saves.UseLiveData = !G.saves.UseLiveData;
                 G.nasa.Initialize(G.saves.UseLiveData);
                 RefreshOptions();
             });
-            UIFactory.Size(liveToggle, 70);
+            UIFactory.Size(liveToggle, 86, -1, -1, 86);
             optionsNasa = UIFactory.Text(body, "Estado", "", 22, Theme.InkSoft);
-            UIFactory.Size(optionsNasa, 110);
+            optionsNasa.enableAutoSizing = true; optionsNasa.fontSizeMin = 16; optionsNasa.fontSizeMax = 22;
+            optionsNasa.overflowMode = TextOverflowModes.Ellipsis;
+            UIFactory.Size(optionsNasa, 120, -1, -1, 120);
             var retry = UIFactory.Button(body, "Reintentar", "Volver a consultar NASA DONKI", Theme.PanelSoft, Theme.Ink, 24, () => G.nasa.Initialize(G.saves.UseLiveData));
-            UIFactory.Size(retry, 64);
+            UIFactory.Size(retry, 86, -1, -1, 86);
             var tut = UIFactory.Button(body, "Tutorial", "", Theme.PanelSoft, Theme.Ink, 24, null);
             tut.onClick.AddListener(() => { G.saves.ShowTutorial = !G.saves.ShowTutorial; RefreshOptions(); });
-            UIFactory.Size(tut, 64);
+            UIFactory.Size(tut, 86, -1, -1, 86);
             var del = UIFactory.Button(body, "Borrar", "Borrar la partida guardada", new Color(1f, 0.9f, 0.9f), Theme.Bad, 24, () =>
             {
                 G.saves.Delete();
                 Toast("Partida guardada borrada.", NoticeKind.Info);
             });
-            UIFactory.Size(del, 64);
+            UIFactory.Size(del, 86, -1, -1, 86);
 
-            var back = UIFactory.Button(card.transform, "Volver", "VOLVER", Theme.Accent, Color.white, 28, ShowMenu);
-            ((RectTransform)back.transform).Place(new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(300, 76), new Vector2(0.5f, 0));
+            var back = UIFactory.Button(card.transform, "Volver", "VOLVER", Theme.Accent, MenuInk, 30, () => { G.sound.Save(); ShowMenu(); });
+            ((RectTransform)back.transform).Place(new Vector2(0.5f, 0), new Vector2(0, 36), new Vector2(340, 96), new Vector2(0.5f, 0));
             G.nasa.StatusChanged += RefreshOptions;
             tutToggleRef = tut;
             return scr;
@@ -249,9 +279,26 @@ namespace Crater.UI
 
         Button tutToggleRef;
 
+        /// <summary>Sección (columna) de opciones: título + controles apilados. Su ancho lo fija AdaptiveColumns.</summary>
+        RectTransform Section(RectTransform parent, string name, string title)
+        {
+            var col = UIFactory.Rect(parent, name);
+            var v = UIFactory.VStack(col.gameObject, 20);
+            v.childForceExpandHeight = false;
+            v.childForceExpandWidth = true;
+            var t = UIFactory.Text(col, "Titulo", title, 32, MenuInk, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            t.enableAutoSizing = true; t.fontSizeMin = 24; t.fontSizeMax = 32;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            var le = UIFactory.Size(t, 52, 0, -1, 52);
+            le.minWidth = 0;
+            return col;
+        }
+
         void ShowOptions()
         {
             ShowOnly(optionsScreen);
+            SyncSettings();
             RefreshOptions();
         }
 
@@ -272,7 +319,7 @@ namespace Crater.UI
             var card = UIFactory.Panel(scr, "Tarjeta", Theme.Panel);
             card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1200, 860));
             var t = UIFactory.Text(card.transform, "Titulo", "CRÉDITOS", 52, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
-            t.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -30), new Vector2(1000, 70), new Vector2(0.5f, 1));
+            t.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -30 - UIFactory.TopInset), new Vector2(1000, 70), new Vector2(0.5f, 1));
             var text = UIFactory.Text(card.transform, "Texto",
                 "<b>CRATER</b> - juego educativo sobre la administración de una base lunar.\n" +
                 "Proyecto para NASA Space Apps Challenge 2026.\n\n" +
@@ -287,7 +334,7 @@ namespace Crater.UI
                 "<b>Arte</b>: sprites originales del equipo CRATER.\n" +
                 "<b>Tecnología</b>: Unity, TextMeshPro. Fuente Liberation Sans (licencia SIL OFL).",
                 26, Theme.Ink);
-            text.rectTransform.Stretch(70, 130, 70, 120);
+            text.Fit(80, 130, 80, 112, 18, 26);
             var back = UIFactory.Button(card.transform, "Volver", "VOLVER", Theme.Accent, Color.white, 28, ShowMenu);
             ((RectTransform)back.transform).Place(new Vector2(0.5f, 0), new Vector2(-180, 30), new Vector2(300, 76), new Vector2(0.5f, 0));
             var science = UIFactory.Button(card.transform, "Ciencia", "CIENCIA REAL", Color.white, Theme.Ink, 28, () => ShowScienceScreen(null));
@@ -305,8 +352,8 @@ namespace Crater.UI
             var card = UIFactory.Panel(scienceScreen, "Tarjeta", Theme.Panel);
             card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1700, 960));
             var t = UIFactory.Text(card.transform, "Titulo", "CIENCIA REAL", 48, Theme.Ink, TextAlignmentOptions.Left, FontStyles.Bold);
-            t.rectTransform.Place(new Vector2(0, 1), new Vector2(50, -24), new Vector2(800, 64), new Vector2(0, 1));
-            var area = UIFactory.Rect(card.transform, "Area").Stretch(40, 120, 40, 100);
+            t.rectTransform.Place(new Vector2(0, 1), new Vector2(60, -24 - UIFactory.TopInset), new Vector2(800, 64), new Vector2(0, 1));
+            var area = UIFactory.Rect(card.transform, "Area").Stretch(60, 120, 60, 100 + UIFactory.TopInset);
             BuildScienceBrowser(area, id);
             var back = UIFactory.Button(card.transform, "Volver", "VOLVER", Theme.Accent, Color.white, 28, () => ShowOnly(creditsScreen));
             ((RectTransform)back.transform).Place(new Vector2(0.5f, 0), new Vector2(0, 26), new Vector2(300, 72), new Vector2(0.5f, 0));
@@ -320,7 +367,7 @@ namespace Crater.UI
             listRoot.anchorMin = new Vector2(0, 0); listRoot.anchorMax = new Vector2(0.3f, 1);
             listRoot.offsetMin = Vector2.zero; listRoot.offsetMax = new Vector2(-10, 0);
 
-            var detail = UIFactory.Scroll(area, "Detalle", 16, 16);
+            var detail = UIFactory.Scroll(area, "Detalle", 24, 28);
             var detailRoot = (RectTransform)detail.parent.parent;
             detailRoot.anchorMin = new Vector2(0.3f, 0); detailRoot.anchorMax = new Vector2(1, 1);
             detailRoot.offsetMin = new Vector2(10, 0); detailRoot.offsetMax = Vector2.zero;
@@ -339,11 +386,14 @@ namespace Crater.UI
                     Para(detail, "<b>Estado de los datos de NASA</b>\n" + G.nasa.StatusText, 22, Theme.InkSoft);
                     return;
                 }
-                Para(detail, "<b>" + d.title + "</b>", 36, Theme.Ink);
-                Para(detail, d.explanation, 26, Theme.Ink);
-                if (!string.IsNullOrEmpty(d.fact)) Box(detail, DefaultContent.TagLabel(d.factTag) + " " + d.fact, DefaultContent.TagColor(d.factTag));
-                if (!string.IsNullOrEmpty(d.source)) Para(detail, "<b>Fuente:</b> " + d.source, 20, Theme.InkSoft);
-                if (!string.IsNullOrEmpty(d.gameNote)) Box(detail, DefaultContent.TagLabel(DataTag.Juego) + " " + d.gameNote, DefaultContent.TagColor(DataTag.Juego));
+                Para(detail, "<b>" + d.title + "</b>", 40, MenuInk);
+                Para(detail, d.explanation, 28, Theme.Ink);
+                // BLOQUE 1: dato real + su fuente (dentro del mismo bloque, justo debajo del dato que respalda).
+                if (!string.IsNullOrEmpty(d.fact))
+                    Box(detail, d.factTag, d.factTag == DataTag.Real ? "DATO REAL" : "DATO PENDIENTE DE VERIFICACIÓN", d.fact,
+                        string.IsNullOrEmpty(d.source) ? null : "Fuente: " + d.source);
+                // BLOQUE 2: valor o simplificación del juego.
+                if (!string.IsNullOrEmpty(d.gameNote)) Box(detail, DataTag.Juego, "VALOR DEL JUEGO", d.gameNote, null);
             }
 
             ScienceData first = null;
@@ -352,12 +402,12 @@ namespace Crater.UI
                 var entry = d;
                 var b = UIFactory.Button(list, d.id, d.title, Color.white, Theme.Ink, 22, () => ShowEntry(entry));
                 b.Label().alignment = TextAlignmentOptions.Left;
-                UIFactory.Size(b, 64);
+                UIFactory.Size(b, 78, -1, -1, 78);
                 if (d.id == selectId) first = d;
             }
             var gv = UIFactory.Button(list, "valores", "Valores del juego y etiquetas", Theme.PanelSoft, Theme.Accent, 22, () => ShowEntry(null));
             gv.Label().alignment = TextAlignmentOptions.Left;
-            UIFactory.Size(gv, 64);
+            UIFactory.Size(gv, 78, -1, -1, 78);
             ShowEntry(first ?? (string.IsNullOrEmpty(selectId) ? G.science.All.FirstOrDefault() : null));
         }
 
@@ -368,12 +418,25 @@ namespace Crater.UI
             return t;
         }
 
-        static void Box(Transform parent, string text, Color tagColor)
+        /// <summary>
+        /// Bloque de información: etiqueta ([REAL] / [JUEGO] / [PENDIENTE]) + texto completo + fuente opcional.
+        /// Párrafos con alineación superior izquierda, ajuste de línea y márgenes internos; el alto crece con el
+        /// contenido (la vista tiene desplazamiento), así nunca se recorta información científica.
+        /// </summary>
+        static void Box(Transform parent, DataTag tag, string heading, string text, string source)
         {
-            var box = UIFactory.Panel(parent, "Caja", new Color(tagColor.r, tagColor.g, tagColor.b, 0.14f), false);
-            UIFactory.VStack(box.gameObject, 0, 16);
-            var t = UIFactory.Text(box.transform, "Texto", text, 22, Theme.Ink);
+            var box = UIFactory.Panel(parent, "Bloque_" + tag, Color.white, false);
+            var v = UIFactory.VStack(box.gameObject, 12);
+            v.padding = new RectOffset(34, 34, 24 + (int)UIFactory.TopInset, 28);
+            v.childForceExpandHeight = false;
+            var head = UIFactory.Text(box.transform, "Etiqueta", UIFactory.Colored("<b>" + DefaultContent.TagLabel(tag) + "</b>", DefaultContent.TagColor(tag)) + "  <b>" + heading + "</b>",
+                24, MenuInk, TextAlignmentOptions.TopLeft);
+            head.gameObject.AddComponent<LayoutElement>();
+            var t = UIFactory.Text(box.transform, "Texto", text, 26, Theme.Ink, TextAlignmentOptions.TopLeft);
             t.gameObject.AddComponent<LayoutElement>();
+            if (source == null) return;
+            var s = UIFactory.Text(box.transform, "Fuente", source, 22, Theme.InkSoft, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+            s.gameObject.AddComponent<LayoutElement>();
         }
 
         static void TagLine(Transform parent, DataTag tag, string text)
@@ -409,7 +472,8 @@ namespace Crater.UI
                 ? "Días sobrevividos: " + survived + " de " + s.totalTurns + "\n" + crew + (s.health >= 70 ? " volvieron sanos y felices." : s.health >= 35 ? " volvieron cansados, pero a salvo." : " volvieron a salvo... ¡por muy poco!")
                 : (string.IsNullOrEmpty(s.defeatCause) ? "La salud de la tripulación llegó a cero." : s.defeatCause) + "\nDías sobrevividos: " + survived + " de " + s.totalTurns;
             var text = UIFactory.Text(card.transform, "Texto", body, 36, Theme.Ink, TextAlignmentOptions.Center);
-            text.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -340), new Vector2(980, 200), new Vector2(0.5f, 1));
+            text.enableAutoSizing = true; text.fontSizeMin = 24; text.fontSizeMax = 36; text.overflowMode = TextOverflowModes.Ellipsis;
+            text.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -340), new Vector2(940, 200), new Vector2(0.5f, 1));
 
             var menu = UIFactory.Button(card.transform, "Menu", "MENÚ PRINCIPAL", Theme.PanelSoft, Theme.Ink, 30, () => { G.QuitToMenu(); ShowMenu(); });
             ((RectTransform)menu.transform).Place(new Vector2(0.5f, 0), new Vector2(-240, 40), new Vector2(440, 90), new Vector2(0.5f, 0));

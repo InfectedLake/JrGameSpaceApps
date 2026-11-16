@@ -22,6 +22,7 @@ namespace Crater.Systems
             reason = "";
             if (!G.IsPlaying) { reason = "La misión terminó"; return false; }
             if (G.events.HasPending) { reason = "Primero responde al evento"; return false; }
+            if (G.Paused) { reason = "Juego en pausa"; return false; }
             return true;
         }
 

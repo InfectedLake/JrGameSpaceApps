@@ -11,38 +11,77 @@ namespace Crater.UI
     // Ventanas de eventos (alerta + ilustración + decisiones) y tutorial.
     public partial class UIManager
     {
-        // ------------------------------------------------------------------ Utilidades
+        static readonly Color Brown = new Color(0.25f, 0.15f, 0.02f);
+        const float GridGap = 16f;
 
-        /// <summary>Ventana centrada con fondo oscurecido y encabezado de color con ilustración.</summary>
-        RectTransform Modal(string title, Color header, Vector2 size, out RectTransform content, Transform layer = null, CraterEventType? illustration = null, Sprite image = null)
+        // ------------------------------------------------------------------ Estructura común de ventana
+
+        /// <summary>
+        /// Ventana centrada con estructura vertical fija:
+        ///   ENCABEZADO (icono + título + subtítulo, alto fijo) → CUERPO (flexible) → la sección de decisiones la agrega quien llama.
+        /// Márgenes: ~6% a los lados; arriba se descuenta el borde transparente del sprite original.
+        /// </summary>
+        RectTransform Window(Transform layer, string title, string subtitle, Vector2 size, CraterEventType? illustration, Sprite image, out RectTransform body, out float contentWidth)
         {
-            bool artUI = UIFactory.ArtPanel != null;
-            // Con el arte original el fondo se oscurece poco: la base muestra la variante del evento detrás.
-            var overlay = UIFactory.Image(layer ?? modalLayer, "Ventana_" + title, new Color(0.02f, 0.04f, 0.12f, artUI ? 0.35f : 0.65f), null, true).rectTransform;
+            var overlay = UIFactory.Image(layer, "Ventana_" + title, new Color(0.02f, 0.04f, 0.12f, UIFactory.ArtPanel != null ? 0.4f : 0.65f), null, true).rectTransform;
             overlay.Stretch();
-            var cardImg = UIFactory.Panel(overlay, "Tarjeta", Theme.Panel);
-            cardImg.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0, artUI ? -60 : 0), size);
-            if (artUI)
+            var card = UIFactory.Panel(overlay, "Tarjeta", Theme.Panel);
+            card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, size);
+
+            float padX = Mathf.Round(size.x * 0.06f);
+            contentWidth = size.x - 2 * padX;
+            var root = UIFactory.Rect(card.transform, "Contenido").Stretch(padX, 34, padX, 28 + UIFactory.TopInset);
+            var v = UIFactory.VStack(root.gameObject, 14);
+            v.childForceExpandHeight = false;
+
+            // ENCABEZADO
+            var header = UIFactory.Rect(root, "Encabezado");
+            UIFactory.Size(header, 112, -1, -1, 112);
+            var h = UIFactory.HStack(header.gameObject, 22);
+            h.childForceExpandWidth = false;
+            h.childAlignment = TextAnchor.MiddleLeft;
+            if (HasIllustration(illustration, image))
             {
-                var artBox = UIFactory.Rect(cardImg.transform, "Ilustracion").Place(new Vector2(0, 1), new Vector2(36, -40), new Vector2(110, 110), new Vector2(0, 1));
-                bool hasArt = DrawArtIllustration(artBox, illustration, image);
-                var tt = UIFactory.Text(cardImg.transform, "Titulo", title, 52, new Color(0.25f, 0.15f, 0.02f), TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
-                tt.rectTransform.anchorMin = new Vector2(0, 1); tt.rectTransform.anchorMax = new Vector2(1, 1);
-                tt.rectTransform.pivot = new Vector2(0.5f, 1);
-                tt.rectTransform.offsetMin = new Vector2(hasArt ? 166 : 40, -150); tt.rectTransform.offsetMax = new Vector2(-30, -36);
-                content = UIFactory.Rect(cardImg.transform, "Contenido").Stretch(40, 30, 40, 160);
-                return overlay;
+                var icon = UIFactory.Rect(header, "Ilustracion");
+                UIFactory.Size(icon, 104, 104, 0);
+                DrawArtIllustration(icon, illustration, image);
             }
-            var head = UIFactory.Panel(cardImg.transform, "Encabezado", header, false);
-            head.rectTransform.anchorMin = new Vector2(0, 1); head.rectTransform.anchorMax = new Vector2(1, 1);
-            head.rectTransform.pivot = new Vector2(0.5f, 1);
-            head.rectTransform.offsetMin = new Vector2(0, -130); head.rectTransform.offsetMax = Vector2.zero;
-            var art = UIFactory.Rect(head.transform, "Ilustracion").Place(new Vector2(0, 0.5f), new Vector2(24, 0), new Vector2(110, 110), new Vector2(0, 0.5f));
-            DrawIllustration(art, illustration, image);
-            var t = UIFactory.Text(head.transform, "Titulo", title, 48, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
-            t.rectTransform.Stretch(160, 4, 24, 4);
-            content = UIFactory.Rect(cardImg.transform, "Contenido").Stretch(32, 24, 32, 148);
+            var titles = UIFactory.Rect(header, "Titulos");
+            UIFactory.Size(titles, -1, -1, 1);
+            var tv = UIFactory.VStack(titles.gameObject, 2);
+            tv.childForceExpandHeight = false;
+            tv.childAlignment = TextAnchor.MiddleLeft;
+            var t = Fixed(titles, title, 50, 32, 58, Brown, FontStyles.Bold);
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            if (!string.IsNullOrEmpty(subtitle)) Fixed(titles, subtitle, 28, 20, 50, Theme.Ink, FontStyles.Bold);
+
+            body = UIFactory.Rect(root, "Cuerpo");
+            UIFactory.Size(body, -1, -1, -1).flexibleHeight = 1;
+            var bv = UIFactory.VStack(body.gameObject, 12);
+            bv.childForceExpandHeight = false;
             return overlay;
+        }
+
+        bool HasIllustration(CraterEventType? type, Sprite image)
+            => image != null || (type == CraterEventType.EarthShadow && art.eclipseSun != null && art.eclipseEarth != null) || UIFactory.ArtPanel == null;
+
+        /// <summary>Texto de alto fijo con tamaño automático acotado (no se sale ni se superpone).</summary>
+        static TextMeshProUGUI Fixed(Transform parent, string text, float size, float min, float height, Color color, FontStyles style = FontStyles.Normal)
+        {
+            var t = UIFactory.Text(parent, "Texto", text, size, color, TextAlignmentOptions.MidlineLeft, style);
+            t.enableAutoSizing = true;
+            t.fontSizeMin = min; t.fontSizeMax = size;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            UIFactory.Size(t, height, -1, -1, height);
+            return t;
+        }
+
+        /// <summary>Párrafo con alto según su contenido (sin tamaño automático).</summary>
+        static TextMeshProUGUI Line(Transform parent, string text, float size = 24, Color? color = null, FontStyles style = FontStyles.Normal)
+        {
+            var t = UIFactory.Text(parent, "Linea", text, size, color ?? Theme.Ink, TextAlignmentOptions.Left, style);
+            t.gameObject.AddComponent<LayoutElement>();
+            return t;
         }
 
         /// <summary>Ilustración con arte original: EventData.image o, para el eclipse, el Sol y la Tierra del equipo.</summary>
@@ -63,53 +102,17 @@ namespace Crater.UI
                 earthImg.rectTransform.Stretch(6, 6, 6, 6);
                 return true;
             }
+            if (UIFactory.ArtPanel == null) DrawIllustration(box, type);
             return false;
         }
 
-        /// <summary>Ilustración del evento: el sprite de EventData.image o un dibujo simple de placeholder.</summary>
-        static void DrawIllustration(RectTransform art, CraterEventType? type, Sprite image)
+        /// <summary>Dibujo provisional (solo se usa si no hay arte original asignado).</summary>
+        static void DrawIllustration(RectTransform art, CraterEventType? type)
         {
             var bg = UIFactory.Image(art, "Fondo", new Color(0.05f, 0.08f, 0.18f, 0.9f), SpriteFactory.Circle);
             bg.rectTransform.Stretch();
-            if (image != null)
-            {
-                var img = UIFactory.Image(art, "Imagen", Color.white, image);
-                img.preserveAspect = true;
-                img.rectTransform.Stretch(8, 8, 8, 8);
-                return;
-            }
-            Image Dot(Color c, Sprite s, Vector2 pos, Vector2 size, float rot = 0)
-            {
-                var i = UIFactory.Image(art, "Parte", c, s);
-                i.rectTransform.Place(new Vector2(0.5f, 0.5f), pos, size);
-                i.rectTransform.localEulerAngles = new Vector3(0, 0, rot);
-                return i;
-            }
-            switch (type)
-            {
-                case CraterEventType.SolarRadiation:
-                    Dot(new Color(1f, 0.8f, 0.3f, 0.6f), SpriteFactory.Glow, Vector2.zero, new Vector2(110, 110));
-                    for (int i = 0; i < 8; i++) Dot(new Color(1f, 0.85f, 0.3f), SpriteFactory.Rounded, Vector2.zero, new Vector2(8, 96), i * 22.5f);
-                    Dot(new Color(1f, 0.9f, 0.4f), SpriteFactory.Circle, Vector2.zero, new Vector2(54, 54));
-                    break;
-                case CraterEventType.Micrometeorites:
-                    foreach (var p in new[] { new Vector2(-22, 20), new Vector2(18, 4), new Vector2(-4, -26) })
-                    {
-                        Dot(new Color(1f, 0.6f, 0.3f, 0.6f), SpriteFactory.Rounded, p + new Vector2(14, 22), new Vector2(10, 44), 32);
-                        Dot(new Color(0.65f, 0.55f, 0.5f), SpriteFactory.Circle, p, new Vector2(20, 18));
-                    }
-                    break;
-                case CraterEventType.EarthShadow:
-                    Dot(new Color(1f, 0.85f, 0.4f, 0.5f), SpriteFactory.Glow, new Vector2(10, 6), new Vector2(100, 100));
-                    Dot(new Color(1f, 0.9f, 0.4f), SpriteFactory.Circle, new Vector2(10, 6), new Vector2(50, 50));
-                    Dot(new Color(0.15f, 0.30f, 0.65f), SpriteFactory.Circle, new Vector2(-6, -2), new Vector2(58, 58));
-                    break;
-                default:
-                    Dot(Theme.Bad, SpriteFactory.Circle, Vector2.zero, new Vector2(70, 70));
-                    var ex = UIFactory.Text(art, "!", "!", 52, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-                    ex.rectTransform.Stretch();
-                    break;
-            }
+            var ex = UIFactory.Text(art, "!", type == null ? "!" : "", 52, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
+            ex.rectTransform.Stretch();
         }
 
         static Color ResourceColor(ResourceKind r) =>
@@ -118,11 +121,11 @@ namespace Crater.UI
         static string ResourceLetter(ResourceKind r) =>
             r == ResourceKind.Energy ? "E" : r == ResourceKind.Oxygen ? "O2" : r == ResourceKind.Food ? "C" : "S";
 
-        static TextMeshProUGUI Line(Transform parent, string text, float size = 24, Color? color = null, FontStyles style = FontStyles.Normal)
+        /// <summary>Espacio flexible que empuja la sección de decisiones al fondo de la ventana.</summary>
+        static void Spacer(Transform parent)
         {
-            var t = UIFactory.Text(parent, "Linea", text, size, color ?? Theme.Ink, TextAlignmentOptions.Left, style);
-            t.gameObject.AddComponent<LayoutElement>();
-            return t;
+            var s = UIFactory.Rect(parent, "Espacio");
+            UIFactory.Size(s, 0).flexibleHeight = 1;
         }
 
         // ------------------------------------------------------------------ Eventos
@@ -136,108 +139,152 @@ namespace Crater.UI
             if (p == null) return;
 
             bool eclipse = p.kind == PromptKind.EclipseAllocation;
-            bool four = p.options.Count >= 4;
-            var size = new Vector2(1180, eclipse ? (UIFactory.ArtPanel != null ? 780 : 860) : four ? 800 : p.kind == PromptKind.Info ? 540 : 640);
-            eventOverlay = Modal(p.title, p.color * 0.85f + Color.black * 0.15f, size, out var content, null, p.eventType, p.image);
-
-            var v = UIFactory.VStack(content.gameObject, 12);
-            v.childForceExpandHeight = false;
-            if (!string.IsNullOrEmpty(p.subtitle)) Line(content, p.subtitle, 32, Theme.Ink, FontStyles.Bold);
-            if (!string.IsNullOrEmpty(p.body)) Line(content, p.body, 26, Theme.Ink);
-            if (!string.IsNullOrEmpty(p.dataLabel)) Line(content, p.dataLabel, 18, Theme.InkSoft, FontStyles.Italic);
-
-            if (eclipse) BuildEclipseAllocation(content, p);
-            else BuildPromptOptions(content, p);
-        }
-
-        void BuildPromptOptions(RectTransform content, EventPrompt p)
-        {
             bool info = p.kind == PromptKind.Info;
             bool twoCols = p.options.Count >= 4;
-            float w = twoCols ? 552 : 1116;
-            float h = info ? 84 : twoCols ? 200 : 130;
-            var grid = UIFactory.Rect(content, "Opciones");
+            int rows = info ? 1 : Mathf.CeilToInt(p.options.Count / (twoCols ? 2f : 1f));
+            float cellH = info ? 90 : twoCols ? 196 : 128;
+            float optionsH = rows * cellH + (rows - 1) * GridGap;
+            if (eclipse) optionsH = 206 * 2 + GridGap + 12 + 150;   // tarjetas 2 × 2 + pie con baterías y CONFIRMAR
+            eventOverlay = Window(modalLayer, p.title, p.subtitle, new Vector2(1200, 600), p.eventType, p.image, out var body, out float width);
+
+            // El alto de la ventana se calcula con el texto real: márgenes + encabezado + texto + decisiones.
+            // Nunca supera 1000 px; si el texto no cabe, se reduce dentro de límites legibles.
+            const float chrome = 85 + 112 + 14 + 36 + 20;
+            float textBudget = 1000 - chrome - optionsH;
+            float textH = 0;
+            if (!string.IsNullOrEmpty(p.body))
+            {
+                var t = Line(body, p.body, 26, Theme.Ink);
+                float need = t.GetPreferredValues(p.body, width, 0).y;
+                if (need > textBudget - 30)
+                {
+                    t.enableAutoSizing = true; t.fontSizeMin = 18; t.fontSizeMax = 26;
+                    t.overflowMode = TextOverflowModes.Ellipsis;
+                    need = textBudget - 30;
+                    UIFactory.Size(t, need, -1, -1, need);
+                }
+                textH += need;
+            }
+            if (!string.IsNullOrEmpty(p.dataLabel)) { Line(body, p.dataLabel, 19, Theme.InkSoft, FontStyles.Italic); textH += 30; }
+            Spacer(body);
+            float height = Mathf.Min(1000, chrome + textH + optionsH);
+            ((RectTransform)eventOverlay.GetChild(0)).sizeDelta = new Vector2(1200, height);
+
+            if (eclipse) BuildEclipseAllocation(body, width);
+            else BuildPromptOptions(body, p, width, twoCols, cellH, optionsH);
+        }
+
+        void BuildPromptOptions(RectTransform body, EventPrompt p, float width, bool twoCols, float cellH, float optionsH)
+        {
+            bool info = p.kind == PromptKind.Info;
+            var grid = UIFactory.Rect(body, "Decisiones");
+            UIFactory.Size(grid, optionsH, -1, -1, optionsH);
             var g = grid.gameObject.AddComponent<GridLayoutGroup>();
-            g.cellSize = new Vector2(w, h);
-            g.spacing = new Vector2(12, 12);
+            int cols = info ? 1 : twoCols ? 2 : 1;
+            float cellW = info ? Mathf.Min(520, width) : (width - (cols - 1) * GridGap) / cols;
+            g.cellSize = new Vector2(cellW, cellH);
+            g.spacing = new Vector2(GridGap, GridGap);
             g.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            g.constraintCount = twoCols ? 2 : 1;
-            int rows = Mathf.CeilToInt(p.options.Count / (twoCols ? 2f : 1f));
-            UIFactory.Size(grid, rows * h + (rows - 1) * 12);
+            g.constraintCount = cols;
+            g.childAlignment = TextAnchor.UpperCenter;
 
             foreach (var o in p.options)
             {
                 var opt = o;
-                var b = UIFactory.Button(grid, o.label, o.label, o.enabled ? (info ? Theme.Accent : Color.white) : Theme.Disabled, info ? Color.white : Theme.Ink, 30, () => G.events.Choose(opt));
+                var b = UIFactory.Button(grid, o.label, o.label, o.enabled ? (info ? Theme.Accent : Color.white) : Theme.Disabled, Brown, 32,
+                    () => { if (!G.Paused) G.events.Choose(opt); });
                 b.interactable = o.enabled;
                 if (info) continue;
-                var outline = UIFactory.Image(b.transform, "Borde", p.color, SpriteFactory.RoundedOutline);
-                outline.enabled = UIFactory.ArtPanel == null;
-                outline.rectTransform.Stretch();
                 var lbl = b.Label();
-                lbl.rectTransform.Stretch(22, 12, 22, 12);
-                lbl.alignment = TextAlignmentOptions.TopLeft;
+                lbl.alignment = TextAlignmentOptions.MidlineLeft;
                 lbl.fontStyle = FontStyles.Normal;
                 if (o.resource.HasValue)
                 {
                     // Evento menor: icono del recurso + nombre + cantidad que se pierde.
                     var r = o.resource.Value;
                     var icon = UIFactory.Image(b.transform, "Icono", ResourceColor(r), SpriteFactory.Circle);
-                    icon.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(22, 0), new Vector2(84, 84), new Vector2(0, 0.5f));
-                    var letter = UIFactory.Text(icon.transform, "Letra", ResourceLetter(r), 30, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
+                    icon.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(24, -UIFactory.TopInset / 2f), new Vector2(76, 76), new Vector2(0, 0.5f));
+                    var letter = UIFactory.Text(icon.transform, "Letra", ResourceLetter(r), 28, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
                     letter.rectTransform.Stretch();
-                    lbl.rectTransform.Stretch(126, 12, 22, 12);
-                    lbl.alignment = TextAlignmentOptions.MidlineLeft;
-                    lbl.enableAutoSizing = false;
-                    lbl.fontSize = 30;
+                    lbl.Fit(120, 10, 28, 8, 20, 30);
                     lbl.text = "<b>" + o.label + "</b>\n" + UIFactory.Colored("<b>" + MinorEventRules.ResourceName(r) + " −" + o.cost + "</b>", Theme.Bad) +
-                               (o.enabled ? "" : "\n" + UIFactory.Colored("<size=20>No disponible: " + o.disabledReason + "</size>", Theme.Bad));
+                               (o.enabled ? "" : "\n" + UIFactory.Colored("<size=80%>No disponible: " + o.disabledReason + "</size>", Theme.Bad));
                     continue;
                 }
-                string text = "<size=30><b>" + o.label + "</b></size>";
+                lbl.Fit(28, 12, 28, 10, 16, 24);
+                lbl.alignment = TextAlignmentOptions.TopLeft;
+                string text = "<size=125%><b>" + o.label + "</b></size>";
                 if (!string.IsNullOrEmpty(o.details)) text += "\n<i>" + o.details + "</i>";
                 if (!string.IsNullOrEmpty(o.costs)) text += "\n" + o.costs;
                 if (!o.enabled && !string.IsNullOrEmpty(o.disabledReason)) text += "\n" + UIFactory.Colored("<b>No disponible: " + o.disabledReason + "</b>", Theme.Bad);
                 lbl.text = text;
-                lbl.enableAutoSizing = true;
-                lbl.fontSizeMin = 14; lbl.fontSizeMax = 22;
             }
         }
 
-        void BuildEclipseAllocation(RectTransform content, EventPrompt p)
+        /// <summary>
+        /// Sombra de la Tierra: 4 tarjetas en cuadrícula 2 × 2 de igual tamaño, indicador de baterías y CONFIRMAR,
+        /// todo dentro del panel. CONFIRMAR solo se habilita con una distribución válida y se ejecuta una sola vez.
+        /// </summary>
+        void BuildEclipseAllocation(RectTransform body, float width)
         {
             var powered = new bool[4];
             var c = G.Config;
-            var grid = UIFactory.Rect(content, "Secciones");
+            const float cellH = 206;
+            float cellW = (width - GridGap) / 2f;
+
+            var grid = UIFactory.Rect(body, "Secciones");
+            float gridH = cellH * 2 + GridGap;
+            UIFactory.Size(grid, gridH, -1, -1, gridH);
             var g = grid.gameObject.AddComponent<GridLayoutGroup>();
-            g.cellSize = new Vector2(270, 300);
-            g.spacing = new Vector2(12, 12);
-            UIFactory.Size(grid, 300);
+            g.cellSize = new Vector2(cellW, cellH);
+            g.spacing = new Vector2(GridGap, GridGap);
+            g.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            g.constraintCount = 2;
 
-            var status = Line(content, "", 28, Theme.Ink, FontStyles.Bold);
-            var confirm = UIFactory.Button(content, "Confirmar", "CONFIRMAR", Theme.Accent, Color.white, 30, () => G.events.ConfirmEclipse(powered));
-            UIFactory.Size(confirm, 80);
+            var footer = UIFactory.Rect(body, "Pie");
+            UIFactory.Size(footer, 150, -1, -1, 150);
+            var fv = UIFactory.VStack(footer.gameObject, 12);
+            fv.childForceExpandHeight = false;
+            fv.childAlignment = TextAnchor.UpperCenter;
+            var status = Fixed(footer, "", 28, 20, 44, Theme.Ink, FontStyles.Bold);
+            status.alignment = TextAlignmentOptions.Center;
+            var row = UIFactory.Rect(footer, "Fila");
+            UIFactory.Size(row, 90, -1, -1, 90);
+            var rh = UIFactory.HStack(row.gameObject, 0);
+            rh.childForceExpandWidth = false;
+            rh.childAlignment = TextAnchor.MiddleCenter;
+            bool confirmed = false;
+            Button confirm = null;
+            confirm = UIFactory.Button(row, "Confirmar", "CONFIRMAR", Theme.Accent, Brown, 34, () =>
+            {
+                if (confirmed || G.Paused || !EclipseRules.Affordable(powered, G.State.batteries, c)) return;
+                confirmed = true;                  // evita el doble clic
+                confirm.interactable = false;
+                baseView.PreviewEclipse(null);
+                G.events.ConfirmEclipse((bool[])powered.Clone());
+            });
+            UIFactory.Size(confirm, 90, 440, 0);
+
             var cards = new List<(Image bg, TextMeshProUGUI txt)>();
-            string[] icons = { "O2", "C", "E", "!" };
-
             void Refresh()
             {
                 int used = EclipseRules.Cost(powered, c);
                 int have = G.State.batteries;
                 string pips = "";
                 for (int i = 0; i < c.maxBatteries; i++)
-                    pips += i < used ? UIFactory.Colored("■ ", Theme.Warn) : (i < have ? UIFactory.Colored("■ ", Theme.Good) : UIFactory.Colored("■ ", Theme.Disabled));
-                status.text = "Baterías: " + pips + "  usadas " + used + " de " + have;
-                confirm.interactable = used <= have;
+                    pips += i < used ? UIFactory.Colored("■", Theme.Warn) : (i < have ? UIFactory.Colored("■", Theme.Good) : UIFactory.Colored("■", Theme.Disabled));
+                status.text = "Baterías disponibles: " + have + "   " + pips + "   Usadas: " + used + " de " + have;
+                confirm.interactable = !confirmed && used <= have;
                 for (int i = 0; i < 4; i++)
                 {
                     var sec = (EclipseSection)i;
-                    cards[i].bg.color = powered[i] ? new Color(0.85f, 0.95f, 0.86f) : new Color(1f, 0.90f, 0.88f);
-                    cards[i].txt.text = "<size=26><b>" + EclipseRules.SectionName(sec) + "</b></size>\n" +
-                                        "Usa " + c.eclipseSectionCost[i] + " batería" + (c.eclipseSectionCost[i] > 1 ? "s" : "") + "\n\n" +
-                                        (powered[i] ? UIFactory.Colored("<b>ENCENDIDO</b>", Theme.Good) + "\n" + EclipseRules.Consequence(sec, true, c)
-                                                    : UIFactory.Colored("<b>APAGADO</b>", Theme.Bad) + "\n" + EclipseRules.Consequence(sec, false, c));
-                    if (UIFactory.ArtPanel != null) cards[i].bg.color = UIFactory.ArtTint(powered[i] ? Theme.Good : Theme.OffGray);
+                    int cost = c.eclipseSectionCost[i];
+                    cards[i].bg.color = UIFactory.ArtPanel != null ? UIFactory.ArtTint(powered[i] ? Theme.Good : Theme.OffGray)
+                                                                    : (powered[i] ? new Color(0.85f, 0.95f, 0.86f) : new Color(1f, 0.90f, 0.88f));
+                    cards[i].txt.text = "<size=120%><b>" + EclipseRules.SectionName(sec) + "</b></size>\n" +
+                                        "Costo: " + cost + " batería" + (cost > 1 ? "s" : "") + "\n" +
+                                        (powered[i] ? UIFactory.Colored("<b>CON ENERGÍA</b>", Theme.Good) : UIFactory.Colored("<b>SIN ENERGÍA</b>", Theme.Bad)) + "\n" +
+                                        EclipseRules.Consequence(sec, powered[i], c);
                 }
                 // La base muestra en vivo qué edificios quedarían encendidos (variantes "encendidos" del eclipse).
                 baseView.PreviewEclipse((bool[])powered.Clone());
@@ -247,15 +294,15 @@ namespace Crater.UI
             for (int i = 0; i < 4; i++)
             {
                 int idx = i;
-                var b = UIFactory.Button(grid, "Seccion" + i, "", Color.white, Theme.Ink, 20, null);
+                var b = UIFactory.Button(grid, "Seccion" + i, "", Color.white, Brown, 22, null);
                 var lbl = b.Label();
-                lbl.rectTransform.Stretch(16, 12, 16, 12);
+                lbl.Fit(26, 14, 26, 10, 16, 22);
                 lbl.alignment = TextAlignmentOptions.TopLeft;
                 lbl.fontStyle = FontStyles.Normal;
-                lbl.enableAutoSizing = true; lbl.fontSizeMin = 14; lbl.fontSizeMax = 21;
                 cards.Add((b.GetComponent<Image>(), lbl));
                 b.onClick.AddListener(() =>
                 {
+                    if (confirmed || G.Paused) return;
                     powered[idx] = !powered[idx];
                     if (EclipseRules.Cost(powered, c) > G.State.batteries)
                     {
@@ -284,19 +331,18 @@ namespace Crater.UI
             tutorialFrame.anchorMin = tutorialFrame.anchorMax = new Vector2(0.5f, 0.5f);
 
             var box = UIFactory.Panel(tutorialRoot, "Dialogo", Theme.Panel, true);
-            box.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, 140), new Vector2(1100, 190), new Vector2(0.5f, 0));
+            box.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(-150, 40), new Vector2(1180, 230), new Vector2(0.5f, 0));
             var portrait = UIFactory.Image(box.transform, "Director", new Color(0.85f, 0.90f, 1f), SpriteFactory.Circle);
-            portrait.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(24, 0), new Vector2(140, 140), new Vector2(0, 0.5f));
+            portrait.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(34, -UIFactory.TopInset / 2f), new Vector2(140, 140), new Vector2(0, 0.5f));
             var helmet = UIFactory.Image(portrait.transform, "Casco", new Color(0.30f, 0.45f, 0.75f), SpriteFactory.Circle);
             helmet.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0, 8), new Vector2(90, 70));
             var who = UIFactory.Text(portrait.transform, "Nombre", "DIRECTOR", 16, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
             who.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, 14), new Vector2(140, 24));
-            tutorialText = UIFactory.Text(box.transform, "Texto", "", 27, Theme.Ink);
-            tutorialText.rectTransform.Stretch(186, 70, 30, 16);
-            tutorialNext = UIFactory.Button(box.transform, "Siguiente", "SIGUIENTE", Theme.Accent, Color.white, 24, NextTutorial);
-            ((RectTransform)tutorialNext.transform).Place(new Vector2(1, 0), new Vector2(-20, 12), new Vector2(230, 56), new Vector2(1, 0));
+            tutorialText = UIFactory.Text(box.transform, "Texto", "", 27, Brown).Fit(200, 86, 40, 14, 20, 28);
+            tutorialNext = UIFactory.Button(box.transform, "Siguiente", "SIGUIENTE", Theme.Accent, Brown, 24, NextTutorial);
+            ((RectTransform)tutorialNext.transform).Place(new Vector2(1, 0), new Vector2(-30, 16), new Vector2(240, 70), new Vector2(1, 0));
             var skip = UIFactory.Button(box.transform, "Omitir", "OMITIR TUTORIAL", Theme.PanelSoft, Theme.InkSoft, 20, () => { G.saves.ShowTutorial = false; CloseTutorial(); });
-            ((RectTransform)skip.transform).Place(new Vector2(1, 0), new Vector2(-266, 12), new Vector2(240, 56), new Vector2(1, 0));
+            ((RectTransform)skip.transform).Place(new Vector2(1, 0), new Vector2(-286, 16), new Vector2(260, 70), new Vector2(1, 0));
             ShowTutorialStep();
         }
 

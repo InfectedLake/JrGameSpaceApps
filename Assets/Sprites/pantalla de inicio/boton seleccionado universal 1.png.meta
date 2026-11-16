@@ -1,15 +1,13 @@
 fileFormatVersion: 2
-guid: cd3e50262fe40a741b7af553b7755acb
+guid: f46f4f4f78700f5469c0e4a0846cced4
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8902384245892760073
-    second: "edificio agua y comida (a\xF1ade un rover en el suelo alado del tanque
-      de agua)_0"
+      213: -7275630342350743836
+    second: boton seleccionado universal 1_0
   - first:
-      213: 3849459864324562889
-    second: "edificio agua y comida (a\xF1ade un rover en el suelo alado del tanque
-      de agua)_1"
+      213: 175439492344093238
+    second: boton seleccionado universal 1_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -118,14 +116,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: "edificio agua y comida (a\xF1ade un rover en el suelo alado del tanque
-        de agua)_0"
+      name: boton seleccionado universal 1_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 156
-        width: 303
-        height: 326
+        x: 57
+        y: 127
+        width: 6
+        height: 6
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -134,21 +131,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7fd3789f1b0647480800000000000000
-      internalID: -8902384245892760073
+      spriteID: 4e6512760c4c70b90800000000000000
+      internalID: -7275630342350743836
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: "edificio agua y comida (a\xF1ade un rover en el suelo alado del tanque
-        de agua)_1"
+      name: boton seleccionado universal 1_1
       rect:
         serializedVersion: 2
-        x: 112
+        x: 1
         y: 0
-        width: 384
-        height: 178
+        width: 446
+        height: 125
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -157,8 +153,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9cf503ee9570c6530800000000000000
-      internalID: 3849459864324562889
+      spriteID: 63a9ebce9494f6200800000000000000
+      internalID: 175439492344093238
       vertices: []
       indices: 
       edges: []
@@ -177,8 +173,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      "edificio agua y comida (a\xF1ade un rover en el suelo alado del tanque de agua)_0": -8902384245892760073
-      "edificio agua y comida (a\xF1ade un rover en el suelo alado del tanque de agua)_1": 3849459864324562889
+      boton seleccionado universal 1_0: -7275630342350743836
+      boton seleccionado universal 1_1: 175439492344093238
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -39,7 +39,7 @@ namespace Crater.UI
 
         // HUD
         readonly ResourceIndicator[] indicators = new ResourceIndicator[4]; // Comida, Energía, Oxígeno, Salud (orden de la referencia)
-        TextMeshProUGUI dayText, endDayHint;
+        TextMeshProUGUI dayText, cycleText, endDayHint;
         RectTransform toastsRoot;
         Button endDayButton;
         BaseView baseView;
@@ -62,6 +62,7 @@ namespace Crater.UI
                 art = ScriptableObject.CreateInstance<CraterArtSet>();
             }
             UIFactory.ArtPanel = art.panel;
+            UIFactory.ClickSound = () => G.sound.PlaySfx(art.sfxClick, 0.7f);
             Build();
             G.StateChanged += RefreshGame;
             G.Noticed += Toast;
@@ -69,7 +70,7 @@ namespace Crater.UI
             G.GameFinished += ShowEnd;
             G.DayEnded += OnDayEnded;
             G.events.PromptChanged += ShowPrompt;
-            G.events.EffectRequested += (type, intensity) => fx.Play(type, intensity);
+            G.events.EffectRequested += (type, intensity) => { fx.Play(type, intensity); if (type == CraterEventType.Micrometeorites) G.sound.PlaySfx(art.sfxMeteors); };
             G.nasa.Initialize(G.saves.UseLiveData);
             ShowMenu();
         }
@@ -131,6 +132,7 @@ namespace Crater.UI
             menuScreen = BuildMainMenu();
             setupScreen = BuildSetup();
             gameScreen = BuildGameScreen();
+            BuildPauseMenu();
             optionsScreen = BuildOptions();
             creditsScreen = BuildCredits();
             scienceScreen = UIFactory.Rect(screensLayer, "Ciencia").Stretch();
@@ -160,6 +162,8 @@ namespace Crater.UI
         {
             foreach (var s in new[] { menuScreen, setupScreen, gameScreen, scienceScreen, creditsScreen, optionsScreen, endScreen })
                 if (s != null) s.gameObject.SetActive(s == screen);
+            if (screen != gameScreen && G.Paused) ClosePause();
+            UpdateMusic();
         }
 
         void CloseAllModals()
@@ -196,23 +200,35 @@ namespace Crater.UI
             Sprite[] slots = { art.slotFood, art.slotEnergy, art.slotOxygen, art.slotHealth };
             Sprite[] icons = { art.iconFood, art.iconEnergy, art.iconOxygen, art.iconHealth };
             for (int i = 0; i < 4; i++)
-                indicators[i] = ResourceIndicator.Create(hud, names[i], slots[i], icons[i], CraterLayout.Slots[i], CraterLayout.Icons[i]);
+                indicators[i] = ResourceIndicator.Create(hud, names[i], slots[i], icons[i], CraterLayout.Slots[i], CraterLayout.IconCenters[i]);
 
             // Menú (hamburguesa): guarda y vuelve al menú principal.
             var menuBg = UIFactory.Image(hud, "FondoMenu", Color.white, art.menuBackground, true);
             menuBg.rectTransform.TopLeft(CraterLayout.MenuBackground, art.menuBackground != null ? art.menuBackground.rect.size : new Vector2(184, 129));
             var menuBtn = menuBg.gameObject.AddComponent<Button>();
             menuBtn.targetGraphic = menuBg;
-            menuBtn.onClick.AddListener(() => { CloseBuildingCard(true); G.QuitToMenu(); ShowMenu(); });
+            menuBtn.onClick.AddListener(() => { UIFactory.ClickSound?.Invoke(); OpenPause(); });
             if (art.menuIcon != null) UIFactory.Image(hud, "IconoMenu", Color.white, art.menuIcon).rectTransform.TopLeft(CraterLayout.MenuIcon, art.menuIcon.rect.size);
 
-            // Días.
-            var days = UIFactory.Image(hud, "FondoDias", Color.white, art.daysBackground);
-            days.rectTransform.TopLeft(CraterLayout.Days, art.daysBackground != null ? art.daysBackground.rect.size : new Vector2(201, 216));
-            // El texto va en el recuadro claro superior del sprite (la parte derecha queda fuera de pantalla, como en la referencia).
-            dayText = UIFactory.Text(days.transform, "Texto", "DÍA\n01/24", 30, new Color(0.25f, 0.15f, 0.02f), TextAlignmentOptions.Center, FontStyles.Bold);
-            dayText.rectTransform.TopLeft(new Vector2(20, 18), new Vector2(138, 84));
-            dayText.lineSpacing = -10;
+            // Contador de días: DayCounter → Background, DayLabel, DayNumber, CycleLabel.
+            // Cada texto ocupa su zona del sprite (sin estirar el arte): "DÍA" y el número en el recuadro claro,
+            // el ciclo en la parte inferior. La franja transparente derecha del sprite queda fuera de pantalla.
+            var counter = UIFactory.Rect(hud, "DayCounter").TopLeft(CraterLayout.Days, art.daysBackground != null ? art.daysBackground.rect.size : new Vector2(201, 216));
+            var days = UIFactory.Image(counter, "Background", Color.white, art.daysBackground);
+            days.rectTransform.Stretch();
+            var dark = new Color(0.25f, 0.15f, 0.02f);
+            var box = CraterLayout.DayBox;
+            var dayLabel = UIFactory.Text(counter, "DayLabel", "DÍA", 22, dark, TextAlignmentOptions.Center, FontStyles.Bold);
+            dayLabel.rectTransform.TopLeft(new Vector2(box.xMin + 4, box.yMin + 3), new Vector2(box.width - 8, 22));
+            dayText = UIFactory.Text(counter, "DayNumber", "01/24", 40, dark, TextAlignmentOptions.Center, FontStyles.Bold);
+            dayText.rectTransform.TopLeft(new Vector2(box.xMin + 4, box.yMin + 25), new Vector2(box.width - 8, box.height - 28));
+            dayText.textWrappingMode = TextWrappingModes.NoWrap;
+            dayText.enableAutoSizing = true; dayText.fontSizeMin = 28; dayText.fontSizeMax = 40;
+            var low = CraterLayout.DayLower;
+            cycleText = UIFactory.Text(counter, "CycleLabel", "CICLO 1 DE 6", 24, new Color(0.99f, 0.92f, 0.75f), TextAlignmentOptions.Center, FontStyles.Bold);
+            cycleText.rectTransform.TopLeft(new Vector2(low.xMin + 8, low.yMin + 14), new Vector2(low.width - 16, 60));
+            cycleText.textWrappingMode = TextWrappingModes.NoWrap;
+            cycleText.enableAutoSizing = true; cycleText.fontSizeMin = 16; cycleText.fontSizeMax = 24;
 
             // Botón de siguiente turno (TERMINAR DÍA).
             var next = UIFactory.Image(hud, "SiguienteTurno", Color.white, art.nextTurn, true);
@@ -220,7 +236,7 @@ namespace Crater.UI
             endDayButton = next.gameObject.AddComponent<Button>();
             endDayButton.targetGraphic = next;
             var nc = endDayButton.colors; nc.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.8f); endDayButton.colors = nc;
-            endDayButton.onClick.AddListener(() => { CloseBuildingCard(true); G.turns.EndDay(); });
+            endDayButton.onClick.AddListener(() => { if (!G.turns.CanEndDay(out _)) return; CloseBuildingCard(true); G.sound.PlaySfx(art.sfxGenerator, 0.6f); G.turns.EndDay(); });
             var nextLabel = UIFactory.Text(next.transform, "Texto", "TERMINAR\nDÍA", 40, new Color(0.45f, 0.20f, 0.02f), TextAlignmentOptions.Center, FontStyles.Bold);
             nextLabel.rectTransform.TopLeft(new Vector2(175, 20), new Vector2(235, 142));
             endDayHint = UIFactory.Text(hud, "Pista", "", 22, Color.white, TextAlignmentOptions.Right, FontStyles.Bold);
@@ -276,7 +292,8 @@ namespace Crater.UI
             indicators[1].Show(s.energy, c.resourceMax, p.energy, c.alertThreshold);
             indicators[2].Show(s.oxygen, c.resourceMax, p.oxygen, c.alertThreshold);
             indicators[3].Show(s.health, c.resourceMax, p.health, c.alertThreshold);
-            dayText.text = "DÍA\n" + Mathf.Min(s.day, s.totalTurns).ToString("00") + "/" + s.totalTurns.ToString("00");
+            dayText.text = Mathf.Min(s.day, s.totalTurns).ToString("00") + "/" + s.totalTurns.ToString("00");
+            cycleText.text = "CICLO " + s.Cycle + " DE " + s.TotalCycles;
 
             // Eventos sobre la misma base: variantes y capas según el estado del día y la ventana abierta.
             var prompt = G.events.Current;
@@ -291,6 +308,7 @@ namespace Crater.UI
             endDayButton.interactable = can;
             endDayHint.text = can ? "" : why;
             RefreshBuildingCard();
+            UpdateMusic();
         }
 
         // ------------------------------------------------------------------ Cámara
@@ -355,28 +373,37 @@ namespace Crater.UI
             img.type = Image.Type.Sliced;
             card = img.rectTransform.TopLeft(CraterLayout.InfoPanelPos, CraterLayout.InfoPanelSize);
             cardGroup = card.gameObject.AddComponent<CanvasGroup>();
-            var body = UIFactory.Rect(card, "Contenido").Stretch(46, 40, 46, 70);
+            // Márgenes ~7% a los lados; arriba se descuenta el borde transparente del sprite.
+            var body = UIFactory.Rect(card, "Contenido").Stretch(60, 44, 60, 30 + UIFactory.TopInset);
             var v = UIFactory.VStack(body.gameObject, 18);
             v.childForceExpandHeight = false;
             Color ink = new Color(0.25f, 0.15f, 0.02f);
-            cardName = UIFactory.Text(body, "Nombre", "", 56, ink, TextAlignmentOptions.Left, FontStyles.Bold);
-            cardStatus = UIFactory.Text(body, "Estado", "", 32, Theme.Good, TextAlignmentOptions.Left, FontStyles.Bold);
-            cardInfo = UIFactory.Text(body, "Funcion", "", 30, ink);
-            cardNumbers = UIFactory.Text(body, "Numeros", "", 30, ink, TextAlignmentOptions.Left, FontStyles.Bold);
-            foreach (var t in new[] { cardName, cardStatus, cardInfo, cardNumbers }) t.gameObject.AddComponent<LayoutElement>();
+            TextMeshProUGUI Block(string n, float size, float min, float height, Color c, FontStyles st)
+            {
+                var t = UIFactory.Text(body, n, "", size, c, TextAlignmentOptions.TopLeft, st);
+                t.enableAutoSizing = true; t.fontSizeMin = min; t.fontSizeMax = size;
+                t.overflowMode = TextOverflowModes.Ellipsis;
+                UIFactory.Size(t, height, -1, -1, height);
+                return t;
+            }
+            cardName = Block("Nombre", 58, 40, 76, ink, FontStyles.Bold);
+            cardName.textWrappingMode = TextWrappingModes.NoWrap;
+            cardStatus = Block("Estado", 32, 22, 86, Theme.Good, FontStyles.Bold);
+            cardInfo = Block("Funcion", 30, 22, 250, ink, FontStyles.Normal);
+            cardNumbers = Block("Numeros", 30, 20, 48, ink, FontStyles.Bold);
             var spacer = UIFactory.Rect(body, "Espacio");
-            UIFactory.Size(spacer, 10).flexibleHeight = 1;
-            cardToggle = UIFactory.Button(body, "Encender", "", Theme.Good, ink, 38, () => { if (cardId.HasValue) G.buildings.Toggle(cardId.Value); });
-            UIFactory.Size(cardToggle, 120);
+            UIFactory.Size(spacer, 0).flexibleHeight = 1;
+            cardToggle = UIFactory.Button(body, "Encender", "", Theme.Good, ink, 40, () => { if (cardId.HasValue) G.buildings.Toggle(cardId.Value); });
+            UIFactory.Size(cardToggle, 120, -1, -1, 120);
             var close = UIFactory.Button(body, "Cerrar", "CERRAR", Color.white, ink, 32, () => CloseBuildingCard(false));
-            UIFactory.Size(close, 100);
+            UIFactory.Size(close, 100, -1, -1, 100);
             card.gameObject.SetActive(false);
         }
 
         /// <summary>1) selección → 2) acercamiento de cámara → 3) al terminar, aparece el panel.</summary>
         void OpenBuildingCard(BuildingId id)
         {
-            if (zooming || cardId.HasValue || G.State == null || G.events.HasPending || G.turns.Busy) return;
+            if (zooming || cardId.HasValue || G.State == null || G.events.HasPending || G.turns.Busy || G.Paused) return;
             StartCoroutine(SelectRoutine(id));
         }
 

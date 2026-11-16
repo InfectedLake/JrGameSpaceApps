@@ -26,9 +26,6 @@ namespace Crater.Data
         public Sprite eclipseFilter, eclipseSun, eclipseEarth;
         public Sprite meteorsOverlay;
 
-        [Header("Rover (PENDIENTE: la carpeta Sprites no tiene arte de rover)")]
-        public Sprite rover, roverBroken;
-
         [Header("Interfaz de juego")]
         public Sprite topBar;
         public Sprite slotFood, slotEnergy, slotOxygen, slotHealth;
@@ -44,5 +41,14 @@ namespace Crater.Data
         public Sprite buttonStart, buttonOptions, buttonCredits, buttonExit;
         [Tooltip("PENDIENTE: el archivo original está vacío (todos sus píxeles son transparentes).")]
         public Sprite buttonSelected;
+
+        [Header("Audio (Assets/Audios)")]
+        public AudioClip musicMenu;
+        public AudioClip musicGame;
+        public AudioClip musicEclipse;
+        public AudioClip musicTension;     // tormenta solar y micrometeoritos
+        public AudioClip sfxClick;
+        public AudioClip sfxMeteors;
+        public AudioClip sfxGenerator;     // al terminar el día
     }
 }
