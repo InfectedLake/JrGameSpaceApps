@@ -302,3 +302,95 @@ Cambios:
 - Se mantienen el botón de pantalla completa y los valores por defecto 100 % / 60 % / 80 % (`AudioManager`); si hay valores guardados en PlayerPrefs se muestran esos.
 
 Verificado con un render real de Unity 6000.3 (copia del proyecto, modo batch) en 1920×1080, 1280×720 y 2560×1080 (dos columnas) y 1440×1080 y 1080×1080 (una columna, con desplazamiento), además de las opciones del menú de pausa.
+
+## Sistema de audio y música (15-nov-2026)
+
+### Inventario de Assets/Audios
+| Archivo | Categoría | Uso | Momento |
+|---|---|---|---|
+| Musica/menu.mp3 (2:40) | Música | Menú principal, opciones, ciencia, pantalla final | En loop mientras no hay partida |
+| Musica/main.mp3 (3:06) | Música | Gameplay | En loop durante la partida; se pausa en los eventos grandes y continúa donde iba |
+| Musica/MusicaEventoGrande.mp3 (0:59) | Música | Los tres acontecimientos principales | Desde la notificación inicial hasta cerrar la última ventana del evento (loop) |
+| Efectos/botones.mp3 | Efecto UI | Botones, selección de edificios, encender/apagar, TERMINAR DÍA, menú ☰ | Al hacer clic (una vez por clic, solo si la acción ocurre) |
+| Efectos/Radiacion.mp3 (~10 s) | Efecto | Tormenta solar | Cuando aparece el destello de la tormenta |
+| Efectos/real meteorits.mp3 (~5 s) | Efecto | Micrometeoritos | Cuando aparecen los impactos |
+| Efectos/eclipse.mp3 (~10 s) | Efecto | Sombra de la Tierra | Cuando la base se oscurece |
+
+- El equipo movió `eclipse.mp3` de Musica a Efectos y reemplazó `ataque(suspenso).mp3` por `MusicaEventoGrande.mp3` (Unity conservó los GUID, por eso se usan `FormerlySerializedAs`).
+- `turbina (generador).mp3` ya no existe: se quitó su campo y TERMINAR DÍA usa el clic normal.
+- No hay audios para los eventos menores ni para la emergencia: no se les asigna ninguno (no se usa la música de evento grande).
+
+### Arquitectura
+- `AudioManager` (único sistema; el proyecto no tenía AudioMixer): Master = `AudioListener.volume`; Music = una AudioSource por pista con fundido de 1 s; SFX = una fuente para la interfaz y otra para los acontecimientos. Volúmenes en PlayerPrefs (100 / 60 / 80 por defecto).
+- `SetMusic(pista)` ignora la pista que ya suena: abrir pausa, opciones o ciencia nunca reinicia la canción.
+- `CraterArtSet` centraliza los clips: `musicMenu`, `musicGame`, `musicEvent`, `sfxClick`, `sfxEclipse`, `sfxRadiation`, `sfxMeteors`.
+- Importación: música en Streaming (sin precarga), efectos Decompress On Load con precarga (suenan sin retraso). No se modificaron los archivos fuente.
+
+### Secuencia de un acontecimiento principal (`EventPrompt.arrival`, `UIManager.EventIntro`)
+1. Termina la transición del día (y la pausa, si está abierta).
+2. Notificación inicial (aviso en pantalla) y empieza la música del evento.
+3. 1,6 s después aparece el fenómeno (oscurecimiento / impactos / destello) y suena su efecto.
+4. 1,4 s después aparece la ventana de decisiones.
+5. Al cerrar la última ventana del evento (resultado, reparaciones), vuelve la música de gameplay.
+
+Los avisos previos ("ocurre en N días") ponen la música del evento, pero no el efecto, porque el fenómeno aún no sucede.
+En pausa la música sigue sonando, la secuencia se detiene y el efecto del evento se pausa y luego continúa. Al salir al menú se detienen el efecto y la música de la partida.
+
+Verificado con una prueba PlayMode de Unity 6000.3 (copia del proyecto): menú → partida → clic en edificio → aviso → eclipse, micrometeoritos y tormenta → pausa → salir al menú → volúmenes → nueva partida.
+
+## Reparación del audio: AudioListener, AudioMixer y volúmenes (15-nov-2026)
+
+### Causa
+- **Sin AudioListener en la escena.** `Assets/Scenes/Crater.unity` tenía la cámara solo con Transform + Camera, y el código no creaba ningún listener. Las AudioSource sí reproducían (la música del menú figuraba como sonando a volumen 0.6), pero Unity no envía nada a la salida sin listener y avisaba "There are no audio listeners in the scene". Por eso no se oía nada al iniciar el juego.
+- **El volumen general se aplicaba en `AudioListener.volume`.** Sin listener ese valor no tenía efecto estable. Música y efectos multiplicaban su volumen en la propia AudioSource junto con el fundido, así que el fundido y el volumen del jugador se pisaban en el mismo valor.
+- **`AudioManager.Awake` modificado a mano.** Las pistas de música tenían `playOnAwake = true` y ya no empezaban en volumen 0.
+- **Al reabrir Opciones** los sliders se sincronizaban con `slider.value = …`. Eso disparaba `OnValueChanged`, que volvía a guardar y aplicar.
+
+### Corrección
+- **AudioListener:** se agregó a la cámara de `Crater.unity` y al constructor de escena. `AudioManager.EnsureSingleListener()` garantiza exactamente uno activo (agrega uno si falta y desactiva duplicados con aviso).
+- **AudioMixer:** `Assets/Data/Crater/CraterMixer.mixer` con los grupos Master > Music, SFX y los parámetros expuestos `MasterVolume`, `MusicVolume` y `SFXVolume`, referenciado en `ArtSet.mixer`. Las fuentes de música salen por Music y las de efectos por SFX.
+- **Volumen en decibelios:** `AudioManager.ToDecibels`: 20·log10(v), y 0 = −80 dB. Ejemplos: 100 % = 0 dB, 50 % ≈ −6 dB, 25 % ≈ −12 dB. Si `SetFloat` devuelve false se registra un error.
+- **Una sola vía por categoría:** las propiedades `Master`, `Music` y `Effects` guardan el valor normalizado y aplican los dB al mixer. El fundido solo cambia `AudioSource.volume` (0..1) y nunca toca el mixer. Mover un slider no ejecuta Play, Stop ni reinicia pistas.
+- **Carga de preferencias:** `PlayerPrefs.HasKey` con predeterminados 100 / 60 / 80 %. Los valores NaN o inválidos se descartan. Los volúmenes se aplican en Start y en Configure (`SetFloat` no es fiable en Awake). Los sliders se sincronizan con `SetValueWithoutNotify`.
+- **Diagnóstico:** `AudioManager.LogDiagnostics` (apagado por defecto) registra los valores de los sliders y los dB aplicados.
+
+### Verificado (prueba PlayMode en Unity 6000.3 con la escena real, midiendo la salida del listener)
+- **A, inicio:** un listener, mixer conectado, valores 100/60/80 → 0 / −4,4 / −1,9 dB. La música del menú suena a ≈ −26 dBFS sin tocar nada.
+- **B, general 50 %:** −6 dB, la salida baja 5,8 dB sin silencios, recupera el nivel al 100 % y la canción no se reinicia.
+- **C, música 30 %:** −10,5 dB, la música baja y SFX no cambia.
+- **D, efectos 20 %:** −14 dB, el efecto baja 11,3 dB y Music no cambia.
+- **E, silencio y recuperación:** con música o efectos en 0 % no sale sonido; al subir a 50 % vuelve a oírse de inmediato.
+- **F, persistencia:** los valores 70/45/35 se conservan al volver al menú, al iniciar partida y al recargar la escena.
+- **G, evento:** la música del evento empieza con la notificación, `eclipse.mp3` suena al aparecer el fenómeno y después vuelve la música de gameplay. En pausa la música sigue sin reiniciarse.
+
+## Alerta anticipada y música persistente de los acontecimientos (15-nov-2026)
+
+### Anticipación
+- Los tres acontecimientos principales se anuncian **2 días antes**: `radiationWarningLead`, `meteorWarningLead` y `eclipseWarningLead` valen 2 en `BalanceConfig` y en `GameBalance.asset`, y se pueden ajustar ahí. Antes, micrometeoritos y eclipse avisaban con 1 día.
+- Todo se mide en días del juego (calendario existente `EventScheduler`/`TurnManager`). No hay temporizadores en segundos.
+- **Texto de la alerta:** se usa la ventana de evento existente con el subtítulo "¡ALERTA! Una tormenta solar fuerte llegará en 2 días.", "¡ALERTA! Se aproxima una lluvia de micrometeoritos: llegará en 2 días." o "¡ALERTA! La Sombra de la Tierra llegará en 2 días.". Al cerrarla el jugador vuelve al gameplay con acceso completo a los edificios. El día de preparación no abre ninguna ventana.
+- Si el monitoreo estuvo apagado, el siguiente evento llega sin aviso (regla existente). Su música empieza con la notificación de llegada.
+
+### Fases (`EventPhase`, calculadas por `EventScheduler.Phase` a partir del estado guardado)
+| Fase | Cuándo | Música |
+|---|---|---|
+| Scheduled | Antes de la alerta | Gameplay |
+| Warning | Día de la alerta (`warningDay`) | Evento (empieza) |
+| Preparation | Días entre la alerta y el evento | Evento |
+| Active | Día del evento, hasta resolverlo | Evento (la misma pista, sin reiniciar) |
+| Resolving | Resto del día en que se resolvió (`resolvedDay`) y mientras duran sus efectos de varios turnos: eclipse → sobrecarga de energía o penalización de comida; micrometeoritos o radiación → reparación con tiempo | Evento |
+| Resolved | Terminó | Gameplay (fundido de 3 s) |
+
+- Al ser un cálculo sobre el estado guardado, la música es correcta también al CONTINUAR una partida.
+- `ScheduledEvent.Uid` identifica cada acontecimiento.
+- `EventScheduler.MusicEvent` elige uno solo si se solapan: primero el activo, luego el que se acerca y luego el que termina.
+
+### Audio
+- `AudioManager.BeginEventMusic(uid)` y `EndEventMusic()` son las solicitudes explícitas de inicio y fin.
+  - Pedir la música del mismo acontecimiento no hace nada.
+  - Si cambia el dueño, la pista sigue sin reiniciarse.
+  - Al terminar, fundido de 3 s de vuelta al gameplay, que retoma donde iba.
+- `UIManager.UpdateMusic` decide solo por la fase del acontecimiento, nunca por las ventanas abiertas. Seleccionar edificios, encenderlos o apagarlos, abrir paneles, cerrar notificaciones o pasar de día no reinicia ni detiene la música.
+- El efecto del acontecimiento suena una sola vez, cuando aparece el fenómeno (`EventIntro`).
+
+Verificado con tests del núcleo (alerta a 2 días, fases, efectos de varios turnos, solapamiento) y con una prueba PlayMode en Unity con días reales. Recorrido: alerta → cerrar → edificios → preparación → eclipse (efecto una vez) → decisión → efectos de varios turnos → fundido a gameplay → continuar partida guardada.

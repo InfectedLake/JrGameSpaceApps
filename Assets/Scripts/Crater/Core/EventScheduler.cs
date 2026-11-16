@@ -77,6 +77,53 @@ namespace Crater.Core
             => s.schedule.Where(e => !e.resolved && !e.warningProcessed && e.day > s.day && s.day >= e.day - WarningLead(e.type, c))
                          .OrderBy(e => e.day);
 
+        // ------------------------------------------------------------------ Fases (controlan la música)
+
+        /// <summary>Fase de un acontecimiento principal según el calendario (días de juego, nunca segundos).</summary>
+        public static EventPhase Phase(ScheduledEvent e, GameState s, BalanceConfig c)
+        {
+            if (e.resolved)
+                return e.resolvedDay == s.day || Lingering(e, s) ? EventPhase.Resolving : EventPhase.Resolved;
+            if (e.day == s.day) return EventPhase.Active;
+            if (e.day < s.day) return EventPhase.Resolved;   // no debería ocurrir: un evento pasado sin resolver no retiene la música
+            if (e.warningProcessed && e.warned)
+                return s.day == (e.warningDay >= 0 ? e.warningDay : e.day - WarningLead(e.type, c)) ? EventPhase.Warning : EventPhase.Preparation;
+            return EventPhase.Scheduled;
+        }
+
+        /// <summary>
+        /// Efectos que duran varios turnos y mantienen activo el acontecimiento que los causó (solo el último resuelto):
+        /// eclipse → penalización de comida o sobrecarga de energía; micrometeoritos/radiación → reparación con tiempo.
+        /// </summary>
+        static bool Lingering(ScheduledEvent e, GameState s)
+        {
+            var last = s.schedule.Where(x => x.resolved).OrderByDescending(x => x.resolvedDay).ThenByDescending(x => x.day).FirstOrDefault();
+            if (last != e) return false;
+            if (e.type == CraterEventType.EarthShadow) return s.foodPenaltyTurns > 0 || s.energyOverheadTurns > 0;
+            return s.panels.repairTurnsLeft > 0 || s.rovers.repairTurnsLeft > 0;
+        }
+
+        /// <summary>Fases en las que suena la música del acontecimiento.</summary>
+        public static bool HasMusic(EventPhase p) => p == EventPhase.Warning || p == EventPhase.Preparation || p == EventPhase.Active || p == EventPhase.Resolving;
+
+        /// <summary>
+        /// Acontecimiento que debe sonar ahora (o null → música de gameplay). Si se solapan dos, manda el que está
+        /// activo; luego el que se acerca; luego el que termina. Hay una sola pista de evento: nunca suenan dos.
+        /// </summary>
+        public static ScheduledEvent MusicEvent(GameState s, BalanceConfig c)
+        {
+            if (s == null || c == null) return null;
+            ScheduledEvent best = null; int bestRank = int.MaxValue;
+            foreach (var e in s.schedule)
+            {
+                var p = Phase(e, s, c);
+                if (!HasMusic(p)) continue;
+                int rank = p == EventPhase.Active ? 0 : (p == EventPhase.Warning || p == EventPhase.Preparation) ? 1 : 2;
+                if (rank < bestRank || (rank == bestRank && best != null && e.day < best.day)) { best = e; bestRank = rank; }
+            }
+            return best;
+        }
+
         public static ScheduledEvent Next(GameState s)
             => s.schedule.Where(e => !e.resolved).OrderBy(e => e.day).FirstOrDefault();
 

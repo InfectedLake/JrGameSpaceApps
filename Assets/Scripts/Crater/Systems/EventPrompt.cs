@@ -28,6 +28,9 @@ namespace Crater.Systems
     {
         public PromptKind kind;
         public CraterEventType? eventType;
+        public int intensity;
+        /// <summary>Ventana del momento en que el acontecimiento OCURRE (no un aviso previo ni un resultado).</summary>
+        public bool arrival;
         public string title = "";
         public string subtitle = "";
         public string body = "";

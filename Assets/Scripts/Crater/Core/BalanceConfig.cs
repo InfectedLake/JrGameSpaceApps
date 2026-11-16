@@ -110,7 +110,7 @@ namespace Crater.Core
 
         // --- Micrometeoritos [JUEGO] ---
         public float meteorBreakChance = 0.30f;
-        public int meteorWarningLead = 1;
+        public int meteorWarningLead = 2;
         public int stowPanelsEnergy = 20;
         public int stowRoversWater = 15;
         public int stowRoversOxygen = 10;
@@ -120,7 +120,7 @@ namespace Crater.Core
         public int brokenCapacity = 50;
 
         // --- Sombra de la Tierra ---
-        public int eclipseWarningLead = 1;
+        public int eclipseWarningLead = 2;
         public int[] eclipseSectionCost = { 2, 1, 1, 1 };
         public int eclipseOxygenLoss = 25;
         public float eclipseFoodPenalty = 0.30f;

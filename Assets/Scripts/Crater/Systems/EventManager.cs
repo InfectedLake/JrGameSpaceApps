@@ -163,6 +163,7 @@ namespace Crater.Systems
         void ProcessWarning(ScheduledEvent ev)
         {
             ev.warningProcessed = true;
+            ev.warningDay = S.day;
             if (S.nextEventUnwarned)
             {
                 S.nextEventUnwarned = false;
@@ -193,19 +194,22 @@ namespace Crater.Systems
             }
             EnsureIntensity(ev);
 
+            EventPrompt p = null;
             switch (ev.type)
             {
                 case CraterEventType.SolarRadiation:
-                    if (ev.warned && ev.choice >= 0) pending.Add(StormArrived(ev));
-                    else pending.Add(RadiationPrompt(ev, false));
+                    p = ev.warned && ev.choice >= 0 ? StormArrived(ev) : RadiationPrompt(ev, false);
                     break;
                 case CraterEventType.Micrometeorites:
-                    pending.Add(MeteorArrivalPrompt(ev));
+                    p = MeteorArrivalPrompt(ev);
                     break;
                 case CraterEventType.EarthShadow:
-                    pending.Add(EclipsePrompt(ev));
+                    p = EclipsePrompt(ev);
                     break;
             }
+            if (p == null) return;
+            p.arrival = true;   // la interfaz presenta antes la notificación y el fenómeno visual (con su música y efecto)
+            pending.Add(p);
         }
 
         void EnsureIntensity(ScheduledEvent ev)
@@ -225,6 +229,7 @@ namespace Crater.Systems
             {
                 kind = kind,
                 eventType = ev.type,
+                intensity = ev.intensity,
                 title = d.title,
                 color = d.color,
                 image = d.image,
@@ -253,6 +258,7 @@ namespace Crater.Systems
         void Record(ScheduledEvent ev, string decision, string result, int damage)
         {
             ev.resolved = true;
+            ev.resolvedDay = S.day;   // el acontecimiento sigue en fase "Resolving" el resto del día
             S.eventsLog.Add(new EventRecord
             {
                 day = S.day, type = ev.type, intensity = ev.intensity, warned = ev.warned,
@@ -263,6 +269,19 @@ namespace Crater.Systems
 
         static string Strength(int intensity) => intensity >= 3 ? "muy fuerte" : (intensity == 2 ? "fuerte" : "débil");
 
+        /// <summary>Texto de la alerta anticipada, p. ej. "¡ALERTA! Una tormenta solar fuerte llegará en 2 días."</summary>
+        string Alert(ScheduledEvent ev)
+        {
+            int days = ev.day - S.day;
+            string when = days <= 1 ? "llegará mañana." : "llegará en " + days + " días.";
+            switch (ev.type)
+            {
+                case CraterEventType.SolarRadiation: return "¡ALERTA! Una tormenta solar " + Strength(ev.intensity) + " " + when;
+                case CraterEventType.Micrometeorites: return "¡ALERTA! Se aproxima una lluvia de micrometeoritos: " + when;
+                default: return "¡ALERTA! La Sombra de la Tierra " + when;
+            }
+        }
+
         // ------------------------------------------------------------------ Radiación
 
         EventPrompt RadiationPrompt(ScheduledEvent ev, bool atWarning)
@@ -271,7 +290,7 @@ namespace Crater.Systems
             var p = Base(ev, PromptKind.Choice);
             int days = ev.day - S.day;
             p.subtitle = atWarning
-                ? "Tormenta " + Strength(ev.intensity) + ": llega en " + days + " día(s)"
+                ? Alert(ev)
                 : (ev.warned ? "¡La tormenta llegó!" : "¡La tormenta llegó sin aviso!") + " Es " + Strength(ev.intensity) + ".";
             p.body = atWarning ? d.warningText : d.description + " ¿Cómo protegerás a tu tripulación?";
 
@@ -356,7 +375,7 @@ namespace Crater.Systems
         {
             var d = G.GetEvent(ev.type);
             var p = Base(ev, PromptKind.Choice);
-            p.subtitle = "Llegan en " + (ev.day - S.day) + " día(s)";
+            p.subtitle = Alert(ev);
             p.body = d.warningText;
             var panels = new PromptOption
             {
@@ -439,7 +458,7 @@ namespace Crater.Systems
         {
             var d = G.GetEvent(ev.type);
             var p = Base(ev, PromptKind.Info);
-            p.subtitle = "Ocurre en " + (ev.day - S.day) + " día(s)";
+            p.subtitle = Alert(ev);
             p.body = d.warningText + " Tenemos " + S.batteries + " baterías. Consejo: guarda energía.";
             p.options.Add(new PromptOption { label = "Entendido" });
             return p;

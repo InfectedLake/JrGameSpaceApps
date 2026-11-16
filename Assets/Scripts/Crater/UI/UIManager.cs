@@ -63,6 +63,8 @@ namespace Crater.UI
             }
             UIFactory.ArtPanel = art.panel;
             UIFactory.ClickSound = () => G.sound.PlaySfx(art.sfxClick, 0.7f);
+            G.sound.Configure(art.mixer, art.musicMenu, art.musicGame, art.musicEvent);
+            G.PauseChanged += paused => G.sound.SetEventSfxPaused(paused);
             Build();
             G.StateChanged += RefreshGame;
             G.Noticed += Toast;
@@ -70,7 +72,8 @@ namespace Crater.UI
             G.GameFinished += ShowEnd;
             G.DayEnded += OnDayEnded;
             G.events.PromptChanged += ShowPrompt;
-            G.events.EffectRequested += (type, intensity) => { fx.Play(type, intensity); if (type == CraterEventType.Micrometeorites) G.sound.PlaySfx(art.sfxMeteors); };
+            // Al resolverse un evento se repite su animación; el efecto de sonido ya sonó al ocurrir (EventIntro).
+            G.events.EffectRequested += (type, intensity) => fx.Play(type, intensity);
             G.nasa.Initialize(G.saves.UseLiveData);
             ShowMenu();
         }
@@ -236,7 +239,7 @@ namespace Crater.UI
             endDayButton = next.gameObject.AddComponent<Button>();
             endDayButton.targetGraphic = next;
             var nc = endDayButton.colors; nc.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.8f); endDayButton.colors = nc;
-            endDayButton.onClick.AddListener(() => { if (!G.turns.CanEndDay(out _)) return; CloseBuildingCard(true); G.sound.PlaySfx(art.sfxGenerator, 0.6f); G.turns.EndDay(); });
+            endDayButton.onClick.AddListener(() => { if (!G.turns.CanEndDay(out _)) return; CloseBuildingCard(true); UIFactory.ClickSound?.Invoke(); G.turns.EndDay(); });
             var nextLabel = UIFactory.Text(next.transform, "Texto", "TERMINAR\nDÍA", 40, new Color(0.45f, 0.20f, 0.02f), TextAlignmentOptions.Center, FontStyles.Bold);
             nextLabel.rectTransform.TopLeft(new Vector2(175, 20), new Vector2(235, 142));
             endDayHint = UIFactory.Text(hud, "Pista", "", 22, Color.white, TextAlignmentOptions.Right, FontStyles.Bold);
@@ -297,12 +300,13 @@ namespace Crater.UI
 
             // Eventos sobre la misma base: variantes y capas según el estado del día y la ventana abierta.
             var prompt = G.events.Current;
-            bool eclipsePrompt = prompt != null && prompt.eventType == CraterEventType.EarthShadow;
-            bool meteorPrompt = prompt != null && prompt.eventType == CraterEventType.Micrometeorites;
+            bool hold = HoldEventVisuals;   // el fenómeno aparece después de la notificación inicial
+            bool eclipsePrompt = !hold && prompt != null && prompt.eventType == CraterEventType.EarthShadow;
+            bool meteorPrompt = !hold && prompt != null && prompt.eventType == CraterEventType.Micrometeorites;
             if (prompt == null || prompt.kind != PromptKind.EclipseAllocation) baseView.PreviewEclipse(null);
             baseView.SetState(s, p);
             fx.SetEclipse(s.today.eclipse || eclipsePrompt);
-            fx.SetMeteors(meteorPrompt || s.today.panelsStowed || s.today.roversStowed);
+            fx.SetMeteors(!hold && (meteorPrompt || s.today.panelsStowed || s.today.roversStowed));
 
             bool can = G.turns.CanEndDay(out string why);
             endDayButton.interactable = can;
@@ -404,6 +408,7 @@ namespace Crater.UI
         void OpenBuildingCard(BuildingId id)
         {
             if (zooming || cardId.HasValue || G.State == null || G.events.HasPending || G.turns.Busy || G.Paused) return;
+            UIFactory.ClickSound?.Invoke();   // solo si la selección realmente ocurre
             StartCoroutine(SelectRoutine(id));
         }
 

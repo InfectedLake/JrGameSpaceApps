@@ -138,7 +138,8 @@ namespace Crater.UI
             pct.textWrappingMode = TextWrappingModes.NoWrap;
             var s = UIFactory.Slider(row, "SliderContainer", value, v => { onChange(v); pct.text = Mathf.RoundToInt(v * 100) + "%"; });
             var sl = UIFactory.Size(s, 70, 220, 1); sl.minWidth = 220;
-            settingsSync.Add(() => s.value = get());
+            // Al reabrir Opciones se muestra el valor guardado SIN disparar OnValueChanged (no vuelve a guardar ni aplicar).
+            settingsSync.Add(() => { float v = get(); s.SetValueWithoutNotify(v); pct.text = Mathf.RoundToInt(v * 100) + "%"; });
             pct.transform.SetAsLastSibling();
             var pl = UIFactory.Size(pct, 70, 86, 0); pl.minWidth = 86;
         }
@@ -220,15 +221,30 @@ namespace Crater.UI
 
         // ------------------------------------------------------------------ Música
 
-        /// <summary>Música según la pantalla y el evento activo (Assets/Audios/Musica).</summary>
+        /// <summary>
+        /// Música según la pantalla y la FASE del acontecimiento (EventScheduler.MusicEvent), no según las ventanas
+        /// abiertas. Se llama en cada refresco, pero las solicitudes al AudioManager son idempotentes: abrir paneles,
+        /// seleccionar edificios, cerrar notificaciones o pasar de día nunca reinicia ni detiene una pista.
+        ///  - Fuera de la partida (menú, opciones, ciencia, final): música del menú. Se detiene el efecto de evento.
+        ///  - Un acontecimiento en Alerta, Preparación, Activo o Resolviendo: su música (BeginEventMusic con su Uid).
+        ///    Si llegó SIN aviso, empieza con la notificación inicial (EventIntro, etapa 1).
+        ///  - Ninguno (eventos menores y emergencias incluidos): música de gameplay (EndEventMusic, fundido largo).
+        /// </summary>
         void UpdateMusic()
         {
             if (G == null || G.sound == null) return;
-            if (!G.InGame || G.State == null || !gameScreen.gameObject.activeSelf) { G.sound.PlayMusic(art.musicMenu); return; }
-            var p = G.events.Current;
-            if (G.State.today.eclipse || (p != null && p.eventType == CraterEventType.EarthShadow)) G.sound.PlayMusic(art.musicEclipse);
-            else if (p != null && (p.eventType == CraterEventType.SolarRadiation || p.eventType == CraterEventType.Micrometeorites)) G.sound.PlayMusic(art.musicTension);
-            else G.sound.PlayMusic(art.musicGame);
+            if (!G.InGame || G.State == null || !gameScreen.gameObject.activeSelf)
+            {
+                G.sound.StopEventSfx();
+                G.sound.SetMusic(MusicTrack.Menu);
+                return;
+            }
+            var ev = EventScheduler.MusicEvent(G.State, G.Config);
+            if (ev == null) { G.sound.EndEventMusic(); return; }
+            // Llegada sin aviso: la música espera a la notificación inicial (si ya sonaba por la alerta, sigue).
+            bool waitNotice = introPrompt != null && introStage < 1 && G.sound.ActiveEventMusic == null;
+            if (waitNotice) { G.sound.SetMusic(MusicTrack.Game); return; }
+            G.sound.BeginEventMusic(ev.Uid);
         }
     }
 }

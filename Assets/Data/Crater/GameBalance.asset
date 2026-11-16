@@ -102,7 +102,7 @@ MonoBehaviour:
     backgroundDosePerTurn: 1.369
     stormDosePerIntensity: 10
     meteorBreakChance: 0.3
-    meteorWarningLead: 1
+    meteorWarningLead: 2
     stowPanelsEnergy: 20
     stowRoversWater: 15
     stowRoversOxygen: 10
@@ -110,7 +110,7 @@ MonoBehaviour:
     repairNowWater: 10
     slowRepairTurns: 2
     brokenCapacity: 50
-    eclipseWarningLead: 1
+    eclipseWarningLead: 2
     eclipseSectionCost: 02000000010000000100000001000000
     eclipseOxygenLoss: 25
     eclipseFoodPenalty: 0.3
