@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Crater.Core;
 using Crater.Systems;
 using TMPro;
@@ -55,26 +56,23 @@ namespace Crater.UI
             pauseRoot = UIFactory.Image(topLayer, "MenuPausa", new Color(0.0f, 0.03f, 0.10f, 0.55f), null, true).rectTransform;
             pauseRoot.Stretch();
 
-            pauseMain = PauseCard("Principal", "MENÚ", new Vector2(700, 660), out var body);
-            PauseButton(body, "CONTINUAR", Theme.Accent, ClosePause);
-            PauseButton(body, "OPCIONES", Color.white, () => ShowPausePage(pauseOptions));
-            PauseButton(body, "MENÚ PRINCIPAL", Color.white, () => AskConfirm("¿SALIR AL MENÚ PRINCIPAL?",
-                "Vas a abandonar la partida actual. Se guardará el inicio de este día para que puedas CONTINUAR, pero perderás lo que hiciste hoy.",
-                "SALIR", ExitToMainMenu));
-            PauseButton(body, "SALIR DEL JUEGO", Color.white, () => AskConfirm("¿DESEAS SALIR DEL JUEGO?",
-                QuitNote(), "SALIR", QuitGame));
+            pauseMain = PauseCard("Principal", "PAUSE_TITLE", new Vector2(700, 660), out var body);
+            PauseButton(body, "PAUSE_CONTINUE", Theme.Accent, ClosePause);
+            PauseButton(body, "PAUSE_OPTIONS", Color.white, () => ShowPausePage(pauseOptions));
+            PauseButton(body, "PAUSE_MAIN_MENU", Color.white, () => AskConfirm("CONFIRM_MENU_TITLE", "CONFIRM_MENU_TEXT", "CONFIRM_EXIT", ExitToMainMenu));
+            PauseButton(body, "PAUSE_EXIT", Color.white, () => AskConfirm("CONFIRM_QUIT_TITLE", QuitNote(), "CONFIRM_EXIT", QuitGame));
 
-            pauseOptions = PauseCard("Opciones", "OPCIONES", new Vector2(900, 760), out var obody);
+            pauseOptions = PauseCard("Opciones", "OPTIONS_TITLE", new Vector2(900, 860), out var obody);
             BuildSettingsControls(obody, 900 - 2 * Mathf.Round(900 * 0.08f));
             var spacer = UIFactory.Rect(obody, "Espacio");
             UIFactory.Size(spacer, 0).flexibleHeight = 1;
-            PauseButton(obody, "VOLVER", Theme.Accent, () => { G.sound.Save(); ShowPausePage(pauseMain); });
+            PauseButton(obody, "BACK", Theme.Accent, () => { G.sound.Save(); ShowPausePage(pauseMain); });
 
             BuildConfirm(pauseRoot);
             pauseRoot.gameObject.SetActive(false);
         }
 
-        RectTransform PauseCard(string name, string title, Vector2 size, out RectTransform body)
+        RectTransform PauseCard(string name, string titleKey, Vector2 size, out RectTransform body)
         {
             var card = UIFactory.Panel(pauseRoot, name, Color.white);
             card.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, size);
@@ -82,14 +80,15 @@ namespace Crater.UI
             body = UIFactory.Rect(card.transform, "Contenido").Stretch(padX, 40, padX, 30 + UIFactory.TopInset);
             var v = UIFactory.VStack(body.gameObject, 18);
             v.childForceExpandHeight = false;
-            var t = UIFactory.Text(body, "Titulo", title, 60, Brown, TextAlignmentOptions.Center, FontStyles.Bold);
+            var t = UIFactory.Text(body, "Titulo", "", 60, Brown, TextAlignmentOptions.Center, FontStyles.Bold).L(titleKey);
+            t.enableAutoSizing = true; t.fontSizeMin = 40; t.fontSizeMax = 60;
             UIFactory.Size(t, 80, -1, -1, 80);
             return (RectTransform)card.transform;
         }
 
-        static Button PauseButton(Transform parent, string label, Color bg, UnityEngine.Events.UnityAction onClick)
+        static Button PauseButton(Transform parent, string key, Color bg, UnityEngine.Events.UnityAction onClick)
         {
-            var b = UIFactory.Button(parent, label, label, bg, Brown, 34, onClick);
+            var b = UIFactory.Button(parent, key, "", bg, Brown, 34, onClick).L(key);
             UIFactory.Size(b, 104, -1, -1, 104);
             return b;
         }
@@ -97,9 +96,9 @@ namespace Crater.UI
         /// <summary>Controles reales: volumen general, música, efectos y pantalla completa (se guardan al momento).</summary>
         void BuildSettingsControls(Transform parent, float width)
         {
-            SliderRow(parent, "Volumen general", () => G.sound.Master, v => G.sound.Master = v);
-            SliderRow(parent, "Música", () => G.sound.Music, v => G.sound.Music = v);
-            SliderRow(parent, "Efectos de sonido", () => G.sound.Effects, v => G.sound.Effects = v);
+            SliderRow(parent, "Master", "OPTIONS_MASTER", () => G.sound.Master, v => G.sound.Master = v);
+            SliderRow(parent, "Music", "OPTIONS_MUSIC", () => G.sound.Music, v => G.sound.Music = v);
+            SliderRow(parent, "Effects", "OPTIONS_SFX", () => G.sound.Effects, v => G.sound.Effects = v);
 
             Button full = null;
             bool fullscreen = G.sound.Fullscreen;
@@ -111,26 +110,74 @@ namespace Crater.UI
                 full.Label().text = FullscreenLabel(fullscreen);
             });
             UIFactory.Size(full, 96, -1, -1, 96);
-            full.Label().text = FullscreenLabel(G.sound.Fullscreen);
+            // La etiqueta se reescribe sola al cambiar el idioma (y al alternar, arriba).
+            full.L(() => AudioManager.FullscreenSupported ? FullscreenLabel(fullscreen) : Loc.T("OPTIONS_FULLSCREEN_UNAVAILABLE"));
             settingsSync.Add(() => { fullscreen = G.sound.Fullscreen; if (AudioManager.FullscreenSupported) full.Label().text = FullscreenLabel(fullscreen); });
-            if (!AudioManager.FullscreenSupported) { full.interactable = false; full.Label().text = "Pantalla completa: no disponible en esta plataforma"; }
+            if (!AudioManager.FullscreenSupported) full.interactable = false;
+            LanguageRow(parent);
         }
 
-        static string FullscreenLabel(bool on) => "Pantalla completa: " + (on ? "SÍ" : "NO");
+        static string FullscreenLabel(bool on) => Loc.T("OPTIONS_FULLSCREEN", Loc.T(on ? "OPTIONS_ON" : "OPTIONS_OFF"));
 
-        void SliderRow(Transform parent, string label, Func<float> get, Action<float> onChange)
+        // ------------------------------------------------------------------ Idioma
+
+        readonly List<(Button en, Button es)> languageButtons = new List<(Button en, Button es)>();
+
+        /// <summary>
+        /// Selector ENGLISH | ESPAÑOL (sin banderas: es un idioma, no un país). Cada opción se escribe en su propio
+        /// idioma para que siempre se reconozca. El cambio es inmediato y se guarda como preferencia.
+        /// </summary>
+        RectTransform LanguageButtons(Transform parent, float height, float fontSize)
+        {
+            var pair = UIFactory.Rect(parent, "Idiomas");
+            var h = UIFactory.HStack(pair.gameObject, 14);
+            h.childForceExpandWidth = true; h.childForceExpandHeight = true;
+            var en = UIFactory.Button(pair, "English", "ENGLISH", Theme.PanelSoft, Theme.Ink, fontSize, () => LanguageSettings.Set(Language.English));
+            var es = UIFactory.Button(pair, "Espanol", "ESPAÑOL", Theme.PanelSoft, Theme.Ink, fontSize, () => LanguageSettings.Set(Language.Spanish));
+            languageButtons.Add((en, es));
+            RefreshLanguageButtons();
+            return pair;
+        }
+
+        void RefreshLanguageButtons()
+        {
+            foreach (var (en, es) in languageButtons)
+            {
+                if (en == null || es == null) continue;
+                Select(en, !Loc.Spanish);
+                Select(es, Loc.Spanish);
+            }
+        }
+
+        /// <summary>Fila "Idioma" de Opciones (menú principal y pausa): etiqueta | ENGLISH | ESPAÑOL.</summary>
+        void LanguageRow(Transform parent)
+        {
+            var row = UIFactory.Rect(parent, "LanguageRow");
+            UIFactory.Size(row, 86, 0, -1, 86);
+            var h = UIFactory.HStack(row.gameObject, 22);
+            h.childForceExpandWidth = false; h.childForceExpandHeight = true;
+            h.childAlignment = TextAnchor.MiddleLeft;
+            var t = UIFactory.Text(row, "Label", "", 28, Brown, TextAlignmentOptions.MidlineLeft, FontStyles.Bold).L("OPTIONS_LANGUAGE");
+            t.enableAutoSizing = true; t.fontSizeMin = 20; t.fontSizeMax = 28;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            var tl = UIFactory.Size(t, 86, 250, 0); tl.minWidth = 250;
+            var pair = LanguageButtons(row, 86, 26);
+            var pl = UIFactory.Size(pair, 86, 300, 1); pl.minWidth = 300;
+        }
+
+        void SliderRow(Transform parent, string name, string labelKey, Func<float> get, Action<float> onChange)
         {
             float value = get();
             // SoundRow → Label | SliderContainer (Background, FillArea/Fill, HandleSlideArea/Handle) | PercentageLabel.
             // Todos los anchos se fijan con LayoutElement (el texto no decide el reparto): la etiqueta y el
             // porcentaje tienen ancho fijo y el slider ocupa todo el espacio restante (mínimo 220 px).
-            var row = UIFactory.Rect(parent, "SoundRow_" + label);
+            var row = UIFactory.Rect(parent, "SoundRow_" + name);
             UIFactory.Size(row, 70, 0, -1, 70);
             var h = UIFactory.HStack(row.gameObject, 22);
             h.childForceExpandWidth = false;
             h.childForceExpandHeight = true;
             h.childAlignment = TextAnchor.MiddleLeft;
-            var t = UIFactory.Text(row, "Label", label, 28, Brown, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            var t = UIFactory.Text(row, "Label", "", 28, Brown, TextAlignmentOptions.MidlineLeft, FontStyles.Bold).L(labelKey);
             t.enableAutoSizing = true; t.fontSizeMin = 20; t.fontSizeMax = 28;
             t.textWrappingMode = TextWrappingModes.NoWrap;
             var tl = UIFactory.Size(t, 70, 250, 0); tl.minWidth = 250;
@@ -166,8 +213,8 @@ namespace Crater.UI
             var row = UIFactory.Rect(body, "Botones");
             UIFactory.Size(row, 100, -1, -1, 100);
             UIFactory.HStack(row.gameObject, 24);
-            UIFactory.Button(row, "Cancelar", "CANCELAR", Color.white, Brown, 32, () => confirmRoot.gameObject.SetActive(false));
-            confirmYes = UIFactory.Button(row, "Si", "SALIR", Theme.Bad, Brown, 32, () =>
+            UIFactory.Button(row, "Cancelar", "", Color.white, Brown, 32, () => confirmRoot.gameObject.SetActive(false)).L("CANCEL");
+            confirmYes = UIFactory.Button(row, "Si", "", Theme.Bad, Brown, 32, () =>
             {
                 confirmRoot.gameObject.SetActive(false);
                 var a = confirmAction; confirmAction = null;
@@ -176,11 +223,12 @@ namespace Crater.UI
             confirmRoot.gameObject.SetActive(false);
         }
 
-        void AskConfirm(string title, string text, string yes, Action onYes)
+        /// <summary>Confirmación con claves de localización (si cambia el idioma con la ventana abierta, se reescribe).</summary>
+        void AskConfirm(string titleKey, string textKey, string yesKey, Action onYes)
         {
-            confirmTitle.text = title;
-            confirmText.text = text;
-            confirmYes.Label().text = yes;
+            confirmTitle.L(titleKey);
+            confirmText.L(textKey);
+            confirmYes.L(yesKey);
             confirmAction = onYes;
             confirmRoot.gameObject.SetActive(true);
             confirmRoot.SetAsLastSibling();
@@ -197,9 +245,9 @@ namespace Crater.UI
         static string QuitNote()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
-            return "En el navegador el juego no puede cerrar la pestaña: se detendrá y podrás cerrarla tú.";
+            return "CONFIRM_QUIT_TEXT_WEB";
 #else
-            return "La partida se guarda al inicio de cada día. Podrás CONTINUAR la próxima vez.";
+            return "CONFIRM_QUIT_TEXT";
 #endif
         }
 
@@ -213,7 +261,7 @@ namespace Crater.UI
             ClosePause();
             G.QuitToMenu();
             ShowMenu();
-            Toast("Puedes cerrar la pestaña del navegador.", NoticeKind.Info);
+            Toast(Loc.T("NOTICE_CLOSE_TAB"), NoticeKind.Info);
 #else
             Application.Quit();
 #endif

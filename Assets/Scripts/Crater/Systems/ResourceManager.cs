@@ -38,14 +38,14 @@ namespace Crater.Systems
         {
             var list = new List<(string, NoticeKind)>();
             if (S == null || p == null) return list;
-            if (p.after.oxygen <= 0) list.Add(("¡Se acabará el oxígeno! Enciende la planta de oxígeno.", NoticeKind.Danger));
-            else if (p.after.food <= 0) list.Add(("¡Se acabará la comida! Enciende el invernadero.", NoticeKind.Danger));
+            if (p.after.oxygen <= 0) list.Add((Loc.T("WARN_OXYGEN_OUT"), NoticeKind.Danger));
+            else if (p.after.food <= 0) list.Add((Loc.T("WARN_FOOD_OUT"), NoticeKind.Danger));
             foreach (var b in p.buildings)
             {
-                if (b.visual == BuildingVisual.NoPower) list.Add((G.GetBuilding(b.id).stats.name + ": no hay energía suficiente.", NoticeKind.Warning));
-                if (b.visual == BuildingVisual.NoWater) list.Add(("Planta de oxígeno: ¡no hay agua!", NoticeKind.Warning));
+                if (b.visual == BuildingVisual.NoPower) list.Add((Loc.T("WARN_NO_POWER", Loc.Building(b.id)), NoticeKind.Warning));
+                if (b.visual == BuildingVisual.NoWater) list.Add((Loc.T("WARN_NO_WATER", Loc.Building(b.id)), NoticeKind.Warning));
             }
-            if (S.habitat <= G.Config.lowHabitatThreshold) list.Add(("La vivienda está en mal estado: mantenla encendida.", NoticeKind.Warning));
+            if (S.habitat <= G.Config.lowHabitatThreshold) list.Add((Loc.T("WARN_HABITAT_BAD"), NoticeKind.Warning));
             return list;
         }
     }

@@ -37,7 +37,7 @@ namespace Crater.Core
 
         public string Breakdown()
         {
-            if (parts.Count == 0) return "Sin cambios";
+            if (parts.Count == 0) return Loc.T("CHANGE_NONE");
             var sb = new StringBuilder();
             for (int i = 0; i < parts.Count; i++)
             {
@@ -87,29 +87,29 @@ namespace Crater.Core
             var s = s0.Clone();
             var m = s.today;
             var r = new TurnReport { before = s0 };
-            var E = r.energy = new ResourceChange("Energía", s.energy);
-            var O = r.oxygen = new ResourceChange("Oxígeno", s.oxygen);
-            var F = r.food = new ResourceChange("Comida", s.food);
-            var H = r.health = new ResourceChange("Salud", s.health);
-            var W = r.water = new ResourceChange("Agua", s.water);
-            var V = r.habitat = new ResourceChange("Vivienda", s.habitat);
+            var E = r.energy = new ResourceChange(Loc.T("RESOURCE_ENERGY"), s.energy);
+            var O = r.oxygen = new ResourceChange(Loc.T("RESOURCE_OXYGEN"), s.oxygen);
+            var F = r.food = new ResourceChange(Loc.T("RESOURCE_FOOD"), s.food);
+            var H = r.health = new ResourceChange(Loc.T("RESOURCE_HEALTH"), s.health);
+            var W = r.water = new ResourceChange(Loc.T("RESOURCE_WATER"), s.water);
+            var V = r.habitat = new ResourceChange(Loc.T("RESOURCE_HABITAT"), s.habitat);
             int waterAtStart = s.water;
 
             // 1. Paneles solares generan energía según su capacidad.
             var solarStats = c.Get(BuildingId.Solar);
             var solar = r.buildings[0] = new BuildingResult { id = BuildingId.Solar, on = s.IsOn(BuildingId.Solar) };
             if (!solar.on) solar.visual = BuildingVisual.Off;
-            else if (m.eclipse) { solar.visual = BuildingVisual.Inactive; solar.reason = "La Tierra tapa al Sol: no hay luz"; }
-            else if (m.panelsStowed) { solar.visual = BuildingVisual.Inactive; solar.reason = "Paneles guardados por los micrometeoritos"; }
-            else if (s.panels.Effective <= 0) { solar.visual = BuildingVisual.Inactive; solar.reason = "En reparación"; }
+            else if (m.eclipse) { solar.visual = BuildingVisual.Inactive; solar.reason = Loc.T("REASON_ECLIPSE"); }
+            else if (m.panelsStowed) { solar.visual = BuildingVisual.Inactive; solar.reason = Loc.T("REASON_PANELS_STOWED"); }
+            else if (s.panels.Effective <= 0) { solar.visual = BuildingVisual.Inactive; solar.reason = Loc.T("REASON_REPAIRING"); }
             else
             {
                 solar.energyMade = Num.Round(solarStats.energy * s.panels.Effective / 100.0);
                 solar.visual = s.panels.Effective < 100 ? BuildingVisual.Broken : BuildingVisual.Working;
-                if (s.panels.Effective < 100) solar.reason = "Dañados: producen al " + s.panels.Effective + "%";
+                if (s.panels.Effective < 100) solar.reason = Loc.T("REASON_DAMAGED", s.panels.Effective);
             }
             r.solarProduced = solar.energyMade;
-            E.Add(solar.energyMade, "paneles solares");
+            E.Add(solar.energyMade, Loc.T("SRC_SOLAR"));
 
             // 2-3. Edificios encendidos con energía suficiente, en orden de prioridad.
             var order = new[] { BuildingId.Recycler, BuildingId.Greenhouse, BuildingId.Habitat }
@@ -125,7 +125,7 @@ namespace Crater.Core
                 if (m.productionPaused && id != BuildingId.Habitat)
                 {
                     br.visual = BuildingVisual.Paused;
-                    br.reason = "Producción pausada: la tripulación está en el búnker";
+                    br.reason = Loc.T("REASON_BUNKER");
                     continue;
                 }
 
@@ -135,64 +135,64 @@ namespace Crater.Core
                 if (id == BuildingId.Recycler && waterNeed > 0 && W.gross < waterNeed)
                 {
                     br.visual = BuildingVisual.NoWater;
-                    br.reason = "Sin agua: no puede fabricar oxígeno";
+                    br.reason = Loc.T("REASON_NO_WATER");
                     continue;
                 }
                 if (E.gross < cost)
                 {
                     br.visual = BuildingVisual.NoPower;
-                    br.reason = "No hay energía suficiente (necesita " + cost + ")";
+                    br.reason = Loc.T("REASON_NO_POWER", cost);
                     continue;
                 }
 
-                E.Add(-cost, Lower(st.name));
+                E.Add(-cost, Lower(Loc.Building(id)));
                 br.energyUsed = cost;
                 br.visual = BuildingVisual.Working;
-                if (overhead > 1f) br.reason = "Red inestable: consume +" + Num.Round(c.eclipseEnergyOverhead * 100) + "%";
+                if (overhead > 1f) br.reason = Loc.T("REASON_OVERHEAD", Num.Round(c.eclipseEnergyOverhead * 100));
 
                 if (id == BuildingId.Recycler)
                 {
-                    W.Add(-waterNeed, "reciclador");
+                    W.Add(-waterNeed, Loc.T("SRC_RECYCLER"));
                     br.waterUsed = waterNeed;
                     br.oxygenMade = m.eclipseOxygenUnpowered ? 0 : Num.Round(st.oxygen * m.oxygenFactor);
-                    O.Add(br.oxygenMade, "reciclador");
-                    if (m.eclipseOxygenUnpowered) { br.visual = BuildingVisual.Inactive; br.reason = "Sin baterías para el oxígeno"; }
+                    O.Add(br.oxygenMade, Loc.T("SRC_RECYCLER"));
+                    if (m.eclipseOxygenUnpowered) { br.visual = BuildingVisual.Inactive; br.reason = Loc.T("REASON_NO_BATTERY_OXYGEN"); }
                 }
                 else if (id == BuildingId.Greenhouse)
                 {
                     int use = System.Math.Min(waterNeed, System.Math.Max(0, W.gross));
-                    W.Add(-use, "invernadero");
+                    W.Add(-use, Loc.T("SRC_GREENHOUSE"));
                     br.waterUsed = use;
 
                     double mult = 1.0;
                     var why = new List<string>();
-                    if (waterAtStart < c.lowWaterThreshold) { mult *= 1.0 - c.lowWaterFoodPenalty; why.Add("poca agua −" + Num.Round(c.lowWaterFoodPenalty * 100) + "%"); }
-                    if (s.foodPenaltyTurns > 0) { mult *= 1.0 - c.eclipseFoodPenalty; why.Add("cultivos sin luz −" + Num.Round(c.eclipseFoodPenalty * 100) + "%"); }
+                    if (waterAtStart < c.lowWaterThreshold) { mult *= 1.0 - c.lowWaterFoodPenalty; why.Add(Loc.T("REASON_LOW_WATER", Num.Round(c.lowWaterFoodPenalty * 100))); }
+                    if (s.foodPenaltyTurns > 0) { mult *= 1.0 - c.eclipseFoodPenalty; why.Add(Loc.T("REASON_CROPS_DARK", Num.Round(c.eclipseFoodPenalty * 100))); }
                     bool paused = m.foodPaused;
                     br.foodMade = paused ? 0 : Num.Round(st.food * mult);
                     br.oxygenMade = m.eclipseOxygenUnpowered ? 0 : Num.Round(st.oxygen * m.oxygenFactor);
-                    F.Add(br.foodMade, "invernadero");
-                    O.Add(br.oxygenMade, "invernadero");
-                    if (m.foodPaused) why.Add("agua usada como escudo");
+                    F.Add(br.foodMade, Loc.T("SRC_GREENHOUSE"));
+                    O.Add(br.oxygenMade, Loc.T("SRC_GREENHOUSE"));
+                    if (m.foodPaused) why.Add(Loc.T("REASON_WATER_SHIELD"));
                     if (why.Count > 0) br.reason = string.Join(", ", why);
                 }
             }
             bool habitatWorking = r.buildings[(int)BuildingId.Habitat].visual == BuildingVisual.Working;
 
-            if (m.eclipseOxygenUnpowered) O.Add(-c.eclipseOxygenLoss, "eclipse sin oxígeno");
+            if (m.eclipseOxygenUnpowered) O.Add(-c.eclipseOxygenLoss, Loc.T("SRC_ECLIPSE_OXYGEN"));
 
             // 4. Agua: los rovers recolectan hielo según su capacidad.
             if (!m.roversStowed && s.roverBusyTurns == 0 && s.rovers.Effective > 0)
                 r.iceCollected = Num.Round(c.roverIcePerTurn * s.rovers.Effective / 100.0);
-            W.Add(r.iceCollected, "hielo de los rovers");
+            W.Add(r.iceCollected, Loc.T("SRC_ROVER_ICE"));
 
             // 5-6. Consumo de la tripulación.
-            O.Add(-s.astronauts * c.oxygenPerAstronaut, "tripulación");
-            F.Add(-s.astronauts * c.foodPerAstronaut, "tripulación");
+            O.Add(-s.astronauts * c.oxygenPerAstronaut, Loc.T("SRC_CREW"));
+            F.Add(-s.astronauts * c.foodPerAstronaut, Loc.T("SRC_CREW"));
 
             // Vivienda: descanso, refugio de regolito y ánimo.
             // Vivienda (edificio): encendida mantiene el hábitat; apagada o sin energía la tripulación lo sufre (Salud, paso 7).
-            if (habitatWorking) V.Add(c.habitatUpkeepGain, "sistemas de la vivienda");
+            if (habitatWorking) V.Add(c.habitatUpkeepGain, Loc.T("SRC_HABITAT_SYSTEMS"));
             else s.habitatDownCycle = s.Cycle;
             if (s.roverBusyTurns > 0)
             {
@@ -202,27 +202,27 @@ namespace Crater.Core
                     s.roverTask = RoverTask.None;
                     s.regolithReady = true;
                     r.regolithCompleted = true;
-                    V.Add(c.regolithHabitatBonus, "aislamiento de regolito");
-                    r.notes.Add("El rover terminó el refugio de regolito.");
+                    V.Add(c.regolithHabitatBonus, Loc.T("SRC_REGOLITH"));
+                    r.notes.Add(Loc.T("NOTE_REGOLITH_DONE"));
                 }
             }
             if (s.Cycle == c.moraleCycle && s.IsLastDayOfCycle && s.habitatDownCycle == c.moraleCycle)
             {
-                V.Add(-c.moraleHabitatLoss, "fatiga y estrés");
+                V.Add(-c.moraleHabitatLoss, Loc.T("SRC_FATIGUE"));
                 r.moraleHit = true;
-                r.notes.Add("La tripulación está cansada: la vivienda estuvo apagada este ciclo y no pudieron descansar bien.");
+                r.notes.Add(Loc.T("NOTE_CREW_TIRED"));
             }
 
             // 7. Salud.
             bool noOxygen = O.gross <= 0, noFood = F.gross <= 0;
             if (noOxygen || noFood)
-                H.Add(-c.starvingHealthLoss, noOxygen ? "sin oxígeno" : "sin comida");
-            if (!habitatWorking) H.Add(-c.habitatOffHealthLoss, "vivienda apagada");
+                H.Add(-c.starvingHealthLoss, noOxygen ? Loc.T("SRC_NO_OXYGEN") : Loc.T("SRC_NO_FOOD"));
+            if (!habitatWorking) H.Add(-c.habitatOffHealthLoss, Loc.T("SRC_HABITAT_OFF"));
             int habitatNow = Num.Clamp(V.gross, 0, c.resourceMax);
             if (habitatNow < c.lowHabitatThreshold)
-                H.Add(-c.lowHabitatHealthLoss, "vivienda en mal estado");
+                H.Add(-c.lowHabitatHealthLoss, Loc.T("SRC_HABITAT_BAD"));
             else if (habitatWorking && !noOxygen && !noFood && habitatNow >= c.healthRecoveryHabitatMin && s.health < c.resourceMax)
-                H.Add(c.healthRecovery, "buen descanso y cuidados");
+                H.Add(c.healthRecovery, Loc.T("SRC_REST"));
 
             // 8. Límites.
             int max = c.resourceMax;
@@ -234,8 +234,8 @@ namespace Crater.Core
             s.habitat = V.after = Num.Clamp(V.gross, 0, max);
 
             // Contadores de fin de día.
-            TickRepair(s.panels, "Los paneles solares", r);
-            TickRepair(s.rovers, "Los rovers", r);
+            TickRepair(s.panels, "NOTE_PANELS_REPAIRED", r);
+            TickRepair(s.rovers, "NOTE_ROVERS_REPAIRED", r);
             if (s.foodPenaltyTurns > 0) s.foodPenaltyTurns--;
             if (s.energyOverheadTurns > 0) s.energyOverheadTurns--;
             if (r.solarProduced > 0 && s.batteries < c.maxBatteries)
@@ -253,15 +253,16 @@ namespace Crater.Core
             if (s.energy <= 0 || s.habitat <= 0)
             {
                 s.emergency = true;
-                s.emergencyReason = s.energy <= 0 && s.habitat <= 0 ? "energía y vivienda"
-                                  : s.energy <= 0 ? "energía" : "vivienda";
+                // Se guardan CLAVES (no texto): la interfaz las muestra en el idioma actual.
+                s.emergencyReason = s.energy <= 0 && s.habitat <= 0 ? "EMERGENCY_ENERGY_HABITAT"
+                                  : s.energy <= 0 ? "EMERGENCY_ENERGY" : "EMERGENCY_HABITAT";
             }
             else { s.emergency = false; s.emergencyReason = ""; }
 
             if (s.health <= 0)
             {
                 s.outcome = Outcome.Defeat;
-                s.defeatCause = noOxygen ? "Se acabó el oxígeno de la base." : noFood ? "Se acabó la comida de la tripulación." : "La vivienda quedó en muy mal estado.";
+                s.defeatCause = noOxygen ? "DEFEAT_OXYGEN" : noFood ? "DEFEAT_FOOD" : "DEFEAT_HABITAT";
             }
             else if (s.day > s.totalTurns) s.outcome = Outcome.Victory;
 
@@ -269,14 +270,14 @@ namespace Crater.Core
             return r;
         }
 
-        static void TickRepair(EquipmentState e, string name, TurnReport r)
+        static void TickRepair(EquipmentState e, string noteKey, TurnReport r)
         {
             if (e.repairTurnsLeft <= 0) return;
             e.repairTurnsLeft--;
             if (e.repairTurnsLeft == 0)
             {
                 e.capacity = 100; e.broken = false;
-                r.notes.Add(name + " vuelven a funcionar al 100%.");
+                r.notes.Add(Loc.T(noteKey));
             }
         }
 

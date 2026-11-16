@@ -78,8 +78,25 @@ namespace Crater.Services
         public string archiveFolder = "DonkiArchive";
 
         public NasaStatus Status { get; private set; } = NasaStatus.Idle;
-        public string StatusText { get; private set; } = "Sin consultar";
-        public string WindowLabel { get; private set; } = "";
+        // El texto de estado se genera en el idioma actual cada vez que se lee (cambia en vivo con el idioma).
+        public string StatusText
+        {
+            get
+            {
+                switch (Status)
+                {
+                    case NasaStatus.Loading: return Loc.T("NASA_LOADING");
+                    case NasaStatus.Live: return Loc.T("NASA_LIVE", flares.Count, WindowLabel);
+                    case NasaStatus.Archive: return Loc.T("ARCHIVE_LABEL") + " (" + WindowLabel + ").";
+                    case NasaStatus.Offline: return Loc.T("NASA_OFFLINE");
+                    default: return Loc.T("NASA_IDLE");
+                }
+            }
+        }
+
+        string windowTitle = "", windowStart = "", windowEnd = "";
+        public string WindowLabel => string.IsNullOrEmpty(windowStart) ? "" :
+            string.IsNullOrEmpty(windowTitle) ? windowStart + " - " + windowEnd : Loc.T("NASA_WINDOW", windowTitle, windowStart, windowEnd);
         public event Action StatusChanged;
 
         readonly List<DonkiFlare> flares = new List<DonkiFlare>();
@@ -94,7 +111,7 @@ namespace Crater.Services
 
         IEnumerator Load(bool live)
         {
-            SetStatus(NasaStatus.Loading, "Consultando NASA DONKI...");
+            SetStatus(NasaStatus.Loading);
             flares.Clear();
 
             if (live)
@@ -116,8 +133,8 @@ namespace Crater.Services
                         if (parsed != null && parsed.Count > 0)
                         {
                             flares.AddRange(parsed);
-                            WindowLabel = start.ToString("dd/MM/yyyy") + " - " + end.ToString("dd/MM/yyyy");
-                            SetStatus(NasaStatus.Live, "EN VIVO: " + flares.Count + " llamaradas registradas por DONKI entre el " + WindowLabel + ".");
+                            windowTitle = ""; windowStart = start.ToString("dd/MM/yyyy"); windowEnd = end.ToString("dd/MM/yyyy");
+                            SetStatus(NasaStatus.Live);
                             loading = null;
                             yield break;
                         }
@@ -127,8 +144,8 @@ namespace Crater.Services
                 }
             }
 
-            if (LoadArchive()) SetStatus(NasaStatus.Archive, DefaultContent.ArchiveLabel + " (" + WindowLabel + ").");
-            else SetStatus(NasaStatus.Offline, "Sin datos de NASA: la intensidad la genera el juego [JUEGO].");
+            if (LoadArchive()) SetStatus(NasaStatus.Archive);
+            else SetStatus(NasaStatus.Offline);
             loading = null;
         }
 
@@ -158,7 +175,7 @@ namespace Crater.Services
                 var data = JsonUtility.FromJson<DonkiArchiveFile>(asset.text.TrimStart('﻿'));
                 if (data?.flares == null || data.flares.Length == 0) return false;
                 flares.AddRange(data.flares.Where(f => f != null && !string.IsNullOrEmpty(f.classType)));
-                WindowLabel = data.title + ", " + data.startDate + " a " + data.endDate;
+                windowTitle = data.title; windowStart = data.startDate; windowEnd = data.endDate;
                 return flares.Count > 0;
             }
             catch (Exception e)
@@ -184,21 +201,21 @@ namespace Crater.Services
                     return new StormSample
                     {
                         intensity = intensity, kind = DataKind.Live,
-                        label = "DATOS EN VIVO de NASA DONKI",
-                        detail = "Basado en una llamarada clase " + f.classType + " registrada el " + date + ". El día de llegada a la base es una simulación del juego."
+                        label = Loc.T("NASA_SAMPLE_LIVE"),
+                        detail = Loc.T("NASA_SAMPLE_LIVE_DETAIL", f.classType, date)
                     };
                 return new StormSample
                 {
                     intensity = intensity, kind = DataKind.Archive,
-                    label = DefaultContent.ArchiveLabel,
-                    detail = "Llamarada clase " + f.classType + " del " + date + " (" + WindowLabel + ")."
+                    label = Loc.T("ARCHIVE_LABEL"),
+                    detail = Loc.T("NASA_SAMPLE_ARCHIVE_DETAIL", f.classType, date, WindowLabel)
                 };
             }
             return new StormSample
             {
                 intensity = EventScheduler.RandomIntensity(c, rng), kind = DataKind.Game,
-                label = "[JUEGO] Intensidad generada por el juego",
-                detail = "No hay datos de NASA disponibles: se usaron las probabilidades del juego (50% baja, 35% media, 15% alta)."
+                label = Loc.T("NASA_SAMPLE_GAME"),
+                detail = Loc.T("NASA_SAMPLE_GAME_DETAIL")
             };
         }
 
@@ -209,9 +226,9 @@ namespace Crater.Services
             return k == 'X' ? 3 : (k == 'M' ? 2 : 1);
         }
 
-        void SetStatus(NasaStatus s, string text)
+        void SetStatus(NasaStatus s)
         {
-            Status = s; StatusText = text;
+            Status = s;
             StatusChanged?.Invoke();
         }
     }

@@ -107,16 +107,13 @@ namespace Crater.Core
             s.ClampAll(c);
         }
 
-        public static string ResourceName(ResourceKind r)
-        {
-            switch (r)
-            {
-                case ResourceKind.Energy: return "Energía";
-                case ResourceKind.Oxygen: return "Oxígeno";
-                case ResourceKind.Food: return "Comida";
-                default: return "Salud";
-            }
-        }
+        public static string ResourceName(ResourceKind r) => Loc.Resource(r);
+
+        // Textos visibles de un evento menor: tabla de localización por id; si el id no está (evento creado en el
+        // asset), se usa el texto escrito en el asset.
+        public static string Name(MinorEventDef d) => Loc.TOr("MINOR_" + d.id.ToUpperInvariant() + "_NAME", d.name);
+        public static string Description(MinorEventDef d) => Loc.TOr("MINOR_" + d.id.ToUpperInvariant() + "_DESC", d.description);
+        public static string OptionText(MinorEventDef d, int i) => Loc.TOr("MINOR_" + d.id.ToUpperInvariant() + (i == 0 ? "_A" : "_B"), d.Option(i).text);
 
         public static MinorEventDef Find(BalanceConfig c, string id) => c.minorEvents?.FirstOrDefault(e => e.id == id);
 

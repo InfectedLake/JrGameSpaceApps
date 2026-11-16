@@ -11,7 +11,6 @@ namespace Crater.Data
     /// </summary>
     public static class DefaultContent
     {
-        public const string ArchiveLabel = "DATOS ARCHIVADOS: estos registros corresponden a una tormenta solar real del pasado";
 
         public static readonly Color SolarColor = new Color(0.35f, 0.62f, 0.95f);
         public static readonly Color GreenhouseColor = new Color(0.38f, 0.80f, 0.45f);
@@ -175,6 +174,7 @@ namespace Crater.Data
         }
 
         // ------------------------------------------------------------------ Tutorial
+        // Texto en español de referencia; en el juego se muestra Loc.T("TUTORIAL_" + i) en el idioma actual.
         public static readonly string[] TutorialSteps =
         {
             "¡Bienvenido, comandante! Soy el director de la agencia espacial. Tu misión: mantener viva a la tripulación hasta el final.",
@@ -190,9 +190,9 @@ namespace Crater.Data
         {
             switch (t)
             {
-                case DataTag.Real: return "[REAL]";
-                case DataTag.Juego: return "[JUEGO]";
-                default: return "[PENDIENTE]";
+                case DataTag.Real: return Loc.T("TAG_REAL");
+                case DataTag.Juego: return Loc.T("TAG_GAME");
+                default: return Loc.T("TAG_PENDING");
             }
         }
 

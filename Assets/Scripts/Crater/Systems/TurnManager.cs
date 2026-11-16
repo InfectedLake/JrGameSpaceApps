@@ -26,10 +26,10 @@ namespace Crater.Systems
         public bool CanEndDay(out string reason)
         {
             reason = "";
-            if (G == null || !G.IsPlaying) { reason = "La misión terminó"; return false; }
-            if (G.events.HasPending) { reason = "Primero responde al evento"; return false; }
-            if (Busy) { reason = "Espera..."; return false; }
-            if (G.Paused) { reason = "Juego en pausa"; return false; }
+            if (G == null || !G.IsPlaying) { reason = Loc.T("REASON_MISSION_OVER"); return false; }
+            if (G.events.HasPending) { reason = Loc.T("REASON_ANSWER_EVENT"); return false; }
+            if (Busy) { reason = Loc.T("REASON_WAIT"); return false; }
+            if (G.Paused) { reason = Loc.T("REASON_PAUSED"); return false; }
             return true;
         }
 
@@ -44,7 +44,7 @@ namespace Crater.Systems
             G.RaiseDayEnded(report);
 
             foreach (var n in report.notes) G.Notify(n, NoticeKind.Info);
-            if (report.energy.Wasted > 0) G.Notify("La batería principal se llenó: se desperdiciaron " + report.energy.Wasted + " de energía.", NoticeKind.Info);
+            if (report.energy.Wasted > 0) G.Notify(Loc.T("NOTICE_ENERGY_WASTED", report.energy.Wasted), NoticeKind.Info);
 
             if (G.State.outcome != Outcome.Playing)
             {
@@ -64,7 +64,7 @@ namespace Crater.Systems
             if (s.emergency && s.energy <= 0) G.buildings.ApplyEmergencyShutdown();
 
             if (s.DayInCycle == 1 && s.Cycle == c.moraleCycle)
-                G.Notify("La tripulación está cansada de estar encerrada. Mantén la VIVIENDA encendida todo este ciclo para que descansen.", NoticeKind.Warning);
+                G.Notify(Loc.T("NOTICE_CREW_TIRED"), NoticeKind.Warning);
 
             foreach (var (text, kind) in G.resources.DayWarnings(Projection())) G.Notify(text, kind);
 

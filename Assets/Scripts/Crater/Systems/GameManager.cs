@@ -66,6 +66,7 @@ namespace Crater.Systems
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+            LanguageSettings.Load();   // inglés si no hay preferencia guardada; si la hay, la última elegida
             ResolveSystems();
             for (int i = 0; i < 4; i++)
                 if (buildingData == null || buildingData.Length < 4 || buildingData[i] == null) { buildingData = MergeDefaults(buildingData); break; }
@@ -195,7 +196,7 @@ namespace Crater.Systems
         public void Decision(string text)
         {
             if (State == null) return;
-            State.decisions.Add("Día " + State.day + ": " + text);
+            State.decisions.Add(Loc.T("DECISION_DAY", State.day, text));
         }
 
         public void NotifyChanged() => StateChanged?.Invoke();
