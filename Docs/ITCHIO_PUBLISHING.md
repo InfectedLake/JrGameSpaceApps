@@ -54,7 +54,7 @@ They are different builds with different settings. Do not mix their files.
    ├── Build/
    └── TemplateData/
    ```
-   PowerShell: `Compress-Archive -Path Builds/Web/* -DestinationPath CRATER_Web.zip`
+   Command (Windows 10/11, run inside `Builds/Web`): `tar -a -c -f ../CRATER_Web.zip index.html Build TemplateData`. **Do not use PowerShell `Compress-Archive`**: on Windows PowerShell 5.1 it writes paths with ``, and itch.io then cannot find `Build/` (index.html loads but every game file gives 404).
 
 itch.io limits for HTML5 ZIPs (https://itch.io/docs/creators/html5): at most **1,000 files**, **500 MB** uncompressed in total, **200 MB** per file, and paths of at most **240 characters**. File names are case sensitive. CRATER's Web build is far below these limits.
 
@@ -101,7 +101,7 @@ itch.io limits for HTML5 ZIPs (https://itch.io/docs/creators/html5): at most **1
    - The game starts in fullscreen; use **Settings → Fullscreen** to switch to windowed.
 3. **Make the ZIP** with everything **except** `CRATER_BurstDebugInformation_DoNotShip`. Never upload only the `.exe`.
    ```powershell
-   Get-ChildItem Builds/Windows -Exclude *_DoNotShip | Compress-Archive -DestinationPath CRATER_Windows.zip
+   cd Builds/Windows; tar -a -c -f ../CRATER_Windows.zip --exclude "*_DoNotShip*" *
    ```
 
 ### 6. Publishing the Windows download from the website
@@ -236,7 +236,7 @@ Son builds distintos, con configuraciones distintas. No mezcles sus archivos.
    ├── Build/
    └── TemplateData/
    ```
-   PowerShell: `Compress-Archive -Path Builds/Web/* -DestinationPath CRATER_Web.zip`
+   Comando (Windows 10/11, dentro de `Builds/Web`): `tar -a -c -f ../CRATER_Web.zip index.html Build TemplateData`. **No uses `Compress-Archive` de PowerShell**: en Windows PowerShell 5.1 escribe las rutas con `` e itch.io no encuentra `Build/` (index.html carga, pero todos los archivos del juego dan 404).
 
 Límites de itch.io para HTML5 (https://itch.io/docs/creators/html5): como máximo **1.000 archivos**, **500 MB** descomprimidos en total, **200 MB** por archivo y rutas de **240 caracteres**. Los nombres distinguen mayúsculas y minúsculas. El build Web de CRATER está muy por debajo de esos límites.
 
@@ -273,7 +273,7 @@ Límites de itch.io para HTML5 (https://itch.io/docs/creators/html5): como máxi
    - El juego empieza en pantalla completa; se cambia en **Opciones → Pantalla completa**.
 3. **Crea el ZIP** con todo **menos** la carpeta `_DoNotShip`. Nunca subas solo el `.exe`.
    ```powershell
-   Get-ChildItem Builds/Windows -Exclude *_DoNotShip | Compress-Archive -DestinationPath CRATER_Windows.zip
+   cd Builds/Windows; tar -a -c -f ../CRATER_Windows.zip --exclude "*_DoNotShip*" *
    ```
 
 ### 6. Publicar la descarga de Windows desde el sitio

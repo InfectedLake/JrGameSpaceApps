@@ -65,8 +65,31 @@ namespace Crater.EditorTools
             var s = report.summary;
             string msg = $"[CRATER] Build {target}: {s.result} · {s.totalSize / (1024f * 1024f):0.0} MB · {s.totalTime:mm\\:ss} · {Path.GetFullPath(folder)}";
             if (s.result != BuildResult.Succeeded) throw new Exception(msg + " · errores: " + s.totalErrors);
-            if (target == BuildTarget.WebGL) EnableWebAutoSync(Path.Combine(folder, "index.html"));
+            if (target == BuildTarget.WebGL)
+            {
+                EnableWebAutoSync(Path.Combine(folder, "index.html"));
+                FitCanvasToFrame(Path.Combine(folder, "index.html"));
+            }
             Debug.Log(msg);
+        }
+
+        /// <summary>
+        /// La plantilla Default dibuja el canvas a un tamaño fijo (1280×720). Si el marco de itch.io es más chico
+        /// (p. ej. 640×360) solo se ve la esquina superior izquierda y los botones quedan fuera. Este estilo hace que
+        /// el juego llene siempre el marco; la interfaz se adapta sola (CanvasScaler).
+        /// </summary>
+        public static void FitCanvasToFrame(string indexHtml)
+        {
+            if (!File.Exists(indexHtml)) return;
+            string html = File.ReadAllText(indexHtml);
+            if (html.Contains("crater-fit")) return;
+            const string style = "<style id=\"crater-fit\">html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000} " +
+                "#unity-container,#unity-container.unity-desktop{position:fixed;left:0;top:0;width:100%;height:100%;transform:none} " +
+                "#unity-canvas{width:100% !important;height:100% !important;display:block} #unity-footer{display:none}</style>";
+            string patched = html.Replace("<link rel=\"stylesheet\" href=\"TemplateData/style.css\">", "<link rel=\"stylesheet\" href=\"TemplateData/style.css\">\n    " + style);
+            if (patched == html) { Debug.LogWarning("[CRATER] No se pudo ajustar el canvas en " + indexHtml); return; }
+            File.WriteAllText(indexHtml, patched);
+            Debug.Log("[CRATER] Web: el canvas llena el marco (sin recortes en itch.io).");
         }
 
         /// <summary>
