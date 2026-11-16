@@ -2,6 +2,8 @@
 
 **English** · [Español](#español)
 
+**▶ Play / Jugar: https://atrepter.itch.io/crater-space-apps**
+
 ---
 
 ## English
@@ -19,6 +21,7 @@ The goal is to teach **real engineering trade-offs** (energy vs. oxygen, food vs
 | Engine | Unity **6000.3.28f1** (Unity 6.3 LTS), 2D (URP) |
 | Languages | English (default) and Spanish |
 | Audience | Kids 7–12, teachers and families |
+| itch.io | https://atrepter.itch.io/crater-space-apps |
 | Event | **NASA Space Apps Challenge 2026** — challenge *Build a Junior Astronaut Mission Trainer* |
 
 ### Features (implemented)
@@ -159,6 +162,7 @@ El objetivo es enseñar **compromisos reales de ingeniería** (energía contra o
 | Motor | Unity **6000.3.28f1** (Unity 6.3 LTS), 2D (URP) |
 | Idiomas | Inglés (predeterminado) y español |
 | Público | Niños de 7 a 12 años, docentes y familias |
+| itch.io | https://atrepter.itch.io/crater-space-apps |
 | Evento | **NASA Space Apps Challenge 2026**, desafío *Build a Junior Astronaut Mission Trainer* |
 
 ### Características (implementadas)
