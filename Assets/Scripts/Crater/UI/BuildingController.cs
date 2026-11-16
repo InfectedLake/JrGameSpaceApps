@@ -1,125 +1,142 @@
 using System;
-using System.Collections.Generic;
 using Crater.Core;
-using Crater.Data;
-using Crater.Systems;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Crater.UI
 {
     /// <summary>
-    /// Un edificio funcional de la base: zona seleccionable, estado visual (encendido, apagado,
-    /// sin energía, averiado) y animación sencilla. El dibujo lo hace BaseView con placeholders;
-    /// si BuildingData.icon tiene un sprite, se usa ese arte en su lugar.
+    /// Un edificio funcional de la base con su arte original. Es UN solo objeto lógico: las variantes
+    /// (normal, encendida en el eclipse, rota por micrometeoritos) solo cambian el sprite de la misma Image,
+    /// y las capas de la tormenta (agua / polvo) son hijos encima. La selección siempre llega al mismo edificio.
     /// </summary>
     public class BuildingController : MonoBehaviour
     {
         public BuildingId id;
         public event Action<BuildingId> Selected;
-
-        /// <summary>Contenedor del arte del edificio (placeholder o sprite definitivo).</summary>
-        public RectTransform Art { get; private set; }
         public RectTransform Rect => (RectTransform)transform;
 
-        CanvasGroup artGroup;
-        Image alarm, badge, selection;
-        TextMeshProUGUI badgeText, nameTag;
-        readonly List<Image> lights = new List<Image>();
-        readonly List<Image> cells = new List<Image>();
-        readonly List<Color> lightBase = new List<Color>();
+        Image main, water, dust;
+        Sprite normal, lit, broken;
+        Vector2 size, litOffset, litSize;
         BuildingVisual visual = BuildingVisual.Working;
-        bool selected;
+        bool selectable = true;
+        bool missingSprite;
         float t;
 
-        public static BuildingController Create(Transform parent, BuildingData data, Vector2 pos, Vector2 size)
+        public static BuildingController Create(RectTransform world, BuildingId id, Sprite normal, Sprite lit, Sprite broken, Sprite water, Sprite dust)
         {
-            var root = UIFactory.Rect(parent, "Edificio_" + data.stats.id).Place(new Vector2(0.5f, 0.5f), pos, size);
+            var pos = CraterLayout.BuildingPos(id);
+            var size = normal != null ? normal.rect.size : new Vector2(200, 200);
+            var root = UIFactory.Rect(world, "Edificio_" + id).TopLeft(pos, size);
             var bc = root.gameObject.AddComponent<BuildingController>();
-            bc.id = data.stats.id;
-            bc.Build(data, size);
+            bc.id = id;
+            bc.normal = normal; bc.lit = lit; bc.broken = broken; bc.size = size;
+            bc.litOffset = CraterLayout.LitOffset(id);
+            bc.litSize = lit != null ? lit.rect.size : size;
+            bc.Build(water, dust);
             return bc;
         }
 
-        void Build(BuildingData data, Vector2 size)
+        void Build(Sprite waterSprite, Sprite dustSprite)
         {
-            alarm = UIFactory.Image(transform, "Alarma", new Color(1, 0.2f, 0.2f, 0), SpriteFactory.Glow);
-            alarm.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, size * 1.35f);
-            selection = UIFactory.Image(transform, "Seleccion", new Color(1f, 0.85f, 0.3f, 0), SpriteFactory.RoundedOutline);
-            selection.rectTransform.Stretch(-10, -10, -10, -10);
-
-            Art = UIFactory.Rect(transform, "Arte").Stretch();
-            artGroup = Art.gameObject.AddComponent<CanvasGroup>();
-            artGroup.blocksRaycasts = false;
-            if (data.icon != null)
+            main = UIFactory.Image(transform, "Sprite", Color.white, normal, true);
+            main.rectTransform.TopLeft(Vector2.zero, size);
+            if (normal == null)
             {
-                var icon = UIFactory.Image(Art, "Sprite", Color.white, data.icon);
-                icon.preserveAspect = true;
-                icon.rectTransform.Stretch();
+                // Una Image sin sprite se dibuja como caja blanca: se avisa y no se muestra.
+                Debug.LogError("[CRATER] El edificio " + id + " no tiene sprite asignado en ArtSet.asset. " +
+                               "Revisa que su imagen esté en modo Single o usa CRATER > Asignar arte original.");
+                missingSprite = true;
             }
-
-            // Zona interactiva (todo el edificio)
-            var hit = UIFactory.Image(transform, "Seleccionar", new Color(1, 1, 1, 0.001f), null, true);
-            hit.rectTransform.Stretch();
-            var button = hit.gameObject.AddComponent<Button>();
+            // Clic solo sobre píxeles opacos (la textura es legible por la configuración de importación).
+            if (normal != null && normal.texture != null && normal.texture.isReadable) main.alphaHitTestMinimumThreshold = 0.5f;
+            var area = CraterLayout.HitArea(id, size);
+            if (area.size != size) main.gameObject.AddComponent<RectHitFilter>().area = area;
+            var button = main.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
-            button.onClick.AddListener(() => Selected?.Invoke(id));
+            button.onClick.AddListener(() => { if (selectable) Selected?.Invoke(id); });
 
-            badge = UIFactory.Image(transform, "Estado", Theme.Good, SpriteFactory.Circle);
-            badge.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0, 18), new Vector2(46, 46));
-            badgeText = UIFactory.Text(badge.transform, "T", "ON", 16, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-            badgeText.rectTransform.Stretch();
-
-            var tag = UIFactory.Panel(transform, "Nombre", new Color(0.08f, 0.12f, 0.22f, 0.75f), false);
-            tag.rectTransform.Place(new Vector2(0.5f, 0f), new Vector2(0, -14), new Vector2(190, 32));
-            nameTag = UIFactory.Text(tag.transform, "T", data.stats.name, 18, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-            nameTag.rectTransform.Stretch();
+            water = Overlay("CapaAgua", waterSprite, CraterLayout.WaterOffset(id));
+            dust = Overlay("CapaPolvo", dustSprite, CraterLayout.DustOffset(id));
         }
 
-        public void AddLight(Image img) { lights.Add(img); lightBase.Add(img.color); }
-        public void AddCell(Image img) => cells.Add(img);
-
-        public void SetSelected(bool on) => selected = on;
-
-        public void Refresh(BuildingResult r)
+        Image Overlay(string name, Sprite s, Vector2 offset)
         {
-            if (r == null) return;
-            visual = r.visual;
-            artGroup.alpha = visual == BuildingVisual.Off ? 0.5f : 1f;
+            if (s == null) return null;
+            var img = UIFactory.Image(transform, name, Color.white, s);
+            img.rectTransform.TopLeft(offset, s.rect.size);
+            img.gameObject.SetActive(false);
+            return img;
+        }
 
-            switch (visual)
-            {
-                case BuildingVisual.Working: badge.color = Theme.Good; badgeText.text = "ON"; break;
-                case BuildingVisual.Off: badge.color = Theme.OffGray; badgeText.text = "OFF"; break;
-                case BuildingVisual.NoPower:
-                case BuildingVisual.NoWater: badge.color = Theme.Bad; badgeText.text = "!"; break;
-                default: badge.color = Theme.Warn; badgeText.text = visual == BuildingVisual.Broken ? "!" : "II"; break;
-            }
+        public void SetSelectable(bool on) => selectable = on;
+
+        RectTransform litPatch;
+
+        /// <summary>
+        /// Muestra un recorte del sprite normal encima de la variante encendida (sin modificar el arte):
+        /// la variante del eclipse de agua y comida no dibuja el rover, que debe verse en todas las variantes.
+        /// </summary>
+        public void SetLitPatch(Sprite source, Rect area)
+        {
+            if (source == null || lit == null) return;
+            litPatch = UIFactory.Rect(transform, "RoverEnVariante").TopLeft(area.position, area.size);
+            litPatch.gameObject.AddComponent<RectMask2D>();
+            var img = UIFactory.Image(litPatch, "Recorte", Color.white, source);
+            img.rectTransform.TopLeft(-area.position, source.rect.size);
+            litPatch.gameObject.SetActive(false);
+            litPatch.SetSiblingIndex(main.transform.GetSiblingIndex() + 1);
+        }
+
+        /// <param name="litOn">Eclipse: la sección de este edificio tiene baterías.</param>
+        /// <param name="brokenOn">Micrometeoritos: equipo dañado (solo existe arte para la energía).</param>
+        public void Refresh(BuildingResult r, bool litOn, bool brokenOn, bool waterOn, bool dustOn)
+        {
+            if (r != null) visual = r.visual;
+            Sprite s = normal;
+            Vector2 pos = Vector2.zero, sz = size;
+            if (litOn && lit != null) { s = lit; pos = litOffset; sz = litSize; }
+            else if (brokenOn && broken != null) s = broken;
+            if (main.sprite != s) main.sprite = s;
+            if (litPatch != null) litPatch.gameObject.SetActive(s == lit);
+            main.rectTransform.TopLeft(pos, sz);
+            if (water != null) water.gameObject.SetActive(waterOn);
+            if (dust != null) dust.gameObject.SetActive(dustOn && !waterOn);
         }
 
         void Update()
         {
             t += Time.unscaledDeltaTime;
-            bool anim = visual == BuildingVisual.Working || visual == BuildingVisual.Broken;
-            float speed = visual == BuildingVisual.Broken ? 0.45f : 1f;
-
-            alarm.color = new Color(1f, 0.2f, 0.2f, visual == BuildingVisual.NoPower || visual == BuildingVisual.NoWater ? 0.3f + 0.25f * Mathf.Sin(t * 5f) : 0f);
-            selection.color = new Color(1f, 0.85f, 0.3f, selected ? 0.7f + 0.3f * Mathf.Sin(t * 4f) : 0f);
-            bool alert = visual != BuildingVisual.Working && visual != BuildingVisual.Off;
-            badge.rectTransform.localScale = Vector3.one * (alert ? 1f + 0.12f * Mathf.Sin(t * 6f) : 1f);
-
-            for (int i = 0; i < lights.Count; i++)
+            Color c;
+            switch (visual)
             {
-                var b = lightBase[i];
-                float k = anim ? 0.75f + 0.25f * Mathf.Sin(t * 2.5f * speed + i) : 0.45f;
-                lights[i].color = new Color(b.r * k, b.g * k, b.b * k, b.a);
+                case BuildingVisual.Off: c = new Color(0.55f, 0.57f, 0.62f); break;
+                case BuildingVisual.NoPower:
+                case BuildingVisual.NoWater: c = Color.Lerp(Color.white, new Color(1f, 0.45f, 0.45f), 0.5f + 0.5f * Mathf.Sin(t * 5f)); break;
+                case BuildingVisual.Paused:
+                case BuildingVisual.Inactive: c = new Color(0.85f, 0.85f, 0.78f); break;
+                default: c = Color.white; break;
             }
-            for (int i = 0; i < cells.Count; i++)
-            {
-                float w = anim ? 0.5f + 0.5f * Mathf.Sin(t * 3f * speed - i * 0.8f) : 0f;
-                cells[i].color = Color.Lerp(new Color(0.12f, 0.25f, 0.55f), new Color(0.35f, 0.55f, 0.95f), w);
-            }
+            main.color = missingSprite ? Color.clear : c;
+        }
+    }
+
+    /// <summary>Limita la zona clicable a un rectángulo del sprite (píxeles, origen arriba a la izquierda).</summary>
+    public class RectHitFilter : MonoBehaviour, ICanvasRaycastFilter
+    {
+        public Rect area;
+
+        public bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera)
+        {
+            var rt = (RectTransform)transform;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rt, screenPoint, eventCamera, out var local)) return false;
+            var r = rt.rect;
+            var img = GetComponent<Image>();
+            var spriteSize = img != null && img.sprite != null ? img.sprite.rect.size : r.size;
+            float px = (local.x - r.xMin) / r.width * spriteSize.x;
+            float py = (r.yMax - local.y) / r.height * spriteSize.y;
+            return area.Contains(new Vector2(px, py));
         }
     }
 }

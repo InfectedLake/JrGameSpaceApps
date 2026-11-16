@@ -46,6 +46,7 @@ namespace Crater.Systems
         public NASADataService nasa;
         public ScienceInfoManager science;
         public SaveSystem saves;
+        public AudioManager sound;
         public UIManager ui;
 
         public BalanceConfig Config { get; private set; }
@@ -88,7 +89,7 @@ namespace Crater.Systems
             turns = Find(turns); resources = Find(resources); buildings = Find(buildings);
             events = Find(events); radiation = Find(radiation); rovers = Find(rovers);
             batteries = Find(batteries); nasa = Find(nasa); science = Find(science);
-            saves = Find(saves); ui = Find(ui);
+            saves = Find(saves); ui = Find(ui); sound = Find(sound);
         }
 
         static BuildingData[] MergeDefaults(BuildingData[] current)
@@ -166,9 +167,29 @@ namespace Crater.Systems
 
         public void QuitToMenu()
         {
-            if (IsPlaying) saves.Save();
+            if (IsPlaying) saves.Save();   // guardado automático existente: la misión se puede CONTINUAR
+            SetPaused(false);
+            events.Clear();
             InGame = false;
             State = null;
+        }
+
+        // ------------------------------------------------------------------ Pausa
+
+        /// <summary>
+        /// Pausa reconocida por todos los sistemas: con la partida en pausa no se puede terminar el día,
+        /// encender/apagar edificios ni responder eventos. También detiene Time.timeScale.
+        /// </summary>
+        public bool Paused { get; private set; }
+        public event Action<bool> PauseChanged;
+
+        public void SetPaused(bool paused)
+        {
+            if (Paused == paused) return;
+            Paused = paused;
+            Time.timeScale = paused ? 0f : 1f;
+            PauseChanged?.Invoke(paused);
+            NotifyChanged();
         }
 
         public void Decision(string text)

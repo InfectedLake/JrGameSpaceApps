@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c4d2e9a1b3f4a6c8d0e2f4a6b8c0d12, type: 3}
+  m_Name: ArtSet
+  m_EditorClassIdentifier: Crater::Crater.Data.CraterArtSet
+  background: {fileID: 21300000, guid: 45650f469fc8ba04d98c8b25ae9caab3, type: 3}
+  energy: {fileID: 21300000, guid: c245c319614234341969223449662d70, type: 3}
+  food: {fileID: 21300000, guid: 3691897e3c5e6b442bcefba28b27d4bc, type: 3}
+  central: {fileID: 21300000, guid: 3f32895bed52b7746b43e2973fe095ef, type: 3}
+  oxygen: {fileID: 21300000, guid: e673b4ed8f3590f40b7c941de0aca4c5, type: 3}
+  habitat: {fileID: 21300000, guid: 0aac39ce60b78a4449c2b1a71a3c7d1d, type: 3}
+  energyBroken: {fileID: 21300000, guid: a8ed3f698b7e66849808226c6b77948b, type: 3}
+  energyLit: {fileID: 21300000, guid: c84aa4047be2a594b93bb37aabe43880, type: 3}
+  foodLit: {fileID: 21300000, guid: 4fba5b67f8c9991499a617de214bb6d2, type: 3}
+  oxygenLit: {fileID: 21300000, guid: cf5398caa1367464885a15e8a8d446d9, type: 3}
+  habitatLit: {fileID: 21300000, guid: e7102bef31f0f8649866185a9e9b776b, type: 3}
+  waterEnergy: {fileID: 21300000, guid: a110e83c3d651154892bc1c5956087a0, type: 3}
+  waterFood: {fileID: 21300000, guid: f538eeb4f20236c47b08644795dec87a, type: 3}
+  waterOxygen: {fileID: 21300000, guid: 5434853830532ea409291454c0c60b61, type: 3}
+  waterHabitat: {fileID: 21300000, guid: 77db4344d8c603d4dbcc9412b31fb88d, type: 3}
+  dustEnergy: {fileID: 21300000, guid: e671459f9515d0642aa02e20948f7734, type: 3}
+  dustFood: {fileID: 21300000, guid: ffbb8c7d744d291418bf97ead7dda672, type: 3}
+  dustOxygen: {fileID: 21300000, guid: ef2f0927bf3f7f84c80a964596d0af1d, type: 3}
+  dustHabitat: {fileID: 21300000, guid: 2af4c3a70243b1b4e9e9b8fe255a7ddf, type: 3}
+  eclipseFilter: {fileID: 21300000, guid: 5e55ae236c0bae34ebfc8e9e175cf4f8, type: 3}
+  eclipseSun: {fileID: 21300000, guid: f62a6e15aaff87a47ba9c59b309dbd62, type: 3}
+  eclipseEarth: {fileID: 21300000, guid: af94a5a9de5f5964e9a63e941eb4150a, type: 3}
+  meteorsOverlay: {fileID: 21300000, guid: ad5020d5e92345942a420f2abe2b2e97, type: 3}
+  topBar: {fileID: 21300000, guid: 3a229f0ad8f7d7b4d9a255708bb1f097, type: 3}
+  slotFood: {fileID: 21300000, guid: 30d39be029e1d2940a5e9cd6982dd56c, type: 3}
+  slotEnergy: {fileID: 21300000, guid: 2901ad114955b5245868e54ba118f79e, type: 3}
+  slotOxygen: {fileID: 21300000, guid: a2fbdff9f2168134eb81c465562e968c, type: 3}
+  slotHealth: {fileID: 21300000, guid: 9d739bb016b61ce4ebf052c89901c356, type: 3}
+  iconFood: {fileID: 21300000, guid: 4682a8f40e6852547a3c4d2d75e11288, type: 3}
+  iconEnergy: {fileID: 21300000, guid: c15806a2a9d5bae4380ca4fbb7986b75, type: 3}
+  iconOxygen: {fileID: 21300000, guid: 66638060005e2d94a8a33b951070cb77, type: 3}
+  iconHealth: {fileID: 21300000, guid: 11a5bb34d71a3c04db66b6a21ed45470, type: 3}
+  menuBackground: {fileID: 21300000, guid: 6e1b0f84c63fa244a9c52ae3fc794920, type: 3}
+  menuIcon: {fileID: 21300000, guid: 864094af9a2afb94abe16d0d97985514, type: 3}
+  daysBackground: {fileID: 21300000, guid: 17f9cf7755c5d68428a25e5f44f7fe5b, type: 3}
+  nextTurn: {fileID: 21300000, guid: 0d7492c77091a114690585003c43b7fb, type: 3}
+  panel: {fileID: 21300000, guid: 6e1b0f84c63fa244a9c52ae3fc794920, type: 3}
+  infoPanel: {fileID: 21300000, guid: f502e55248257e6498329bc0cce92d9e, type: 3}
+  titleBackground: {fileID: 21300000, guid: 6bde0764e99966d44bfb61c3586f1ada, type: 3}
+  titleBanner: {fileID: 21300000, guid: 716b3461f731b754990a108dd4a05417, type: 3}
+  buttonStart: {fileID: 21300000, guid: 4795dd84350dc9a4998b4761a36f6c54, type: 3}
+  buttonOptions: {fileID: 21300000, guid: 4ae3ffdf5663c3b4eaf07f6620bbd6e3, type: 3}
+  buttonCredits: {fileID: 21300000, guid: b661b5a90aedb7144bb39e8eef0dec00, type: 3}
+  buttonExit: {fileID: 21300000, guid: f276b5a8815f22345a3cd9651861bbcf, type: 3}
+  buttonSelected: {fileID: 21300000, guid: dac82f324ce7aee469ac11438df6a56e, type: 3}
+  musicMenu: {fileID: 8300000, guid: b9f7aececbba0c340ae721fd3e44e45e, type: 3}
+  musicGame: {fileID: 8300000, guid: 26a36b8b628b9a941b6ebad61cdea0f9, type: 3}
+  musicEclipse: {fileID: 8300000, guid: f46ac49716257f843a7c957fb109553f, type: 3}
+  musicTension: {fileID: 8300000, guid: 19eecd66eb82cde41b5aabc6708b53a6, type: 3}
+  sfxClick: {fileID: 8300000, guid: 74b928e877101ab459d687b3539aeb6e, type: 3}
+  sfxMeteors: {fileID: 8300000, guid: 7f534d41ecfbf3e40a8cb2e01031c755, type: 3}
+  sfxGenerator: {fileID: 8300000, guid: a56bcd5b69e28c9449502ca888183a4a, type: 3}

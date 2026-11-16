@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using Crater.Core;
@@ -15,20 +14,19 @@ using UnityEngine.InputSystem.UI;
 namespace Crater.UI
 {
     /// <summary>
-    /// Interfaz de CRATER (Unity UI + TextMeshPro, construida por código).
+    /// Interfaz de CRATER con el arte original del equipo (Unity UI + TextMeshPro).
     /// Separada de la simulación: solo lee el estado, pide la proyección y llama a los sistemas.
-    /// Durante la partida muestra solo: 4 recursos, día, la base, TERMINAR DÍA y MENÚ.
-    /// GameObject: "UIManager" (hijo de "CRATER").
+    ///
+    /// Pantalla de juego (de atrás hacia adelante):
+    ///   Vista (máscara) → Camara (zoom) → Mundo (fondo + edificios + rover) → Efectos de eventos → HUD → Ficha del edificio
+    /// La "cámara" es el RectTransform Camara: al seleccionar un edificio se acerca (escala ×2 y desplazamiento)
+    /// y recién al terminar aparece el panel; al cerrarlo vuelve a la vista general.
+    /// GameObject: "UIManager" (hijo de "CRATER"). Inspector: asigna "art" (Assets/Data/Crater/ArtSet.asset).
     /// </summary>
     public partial class UIManager : MonoBehaviour
     {
-        [Tooltip("Escala de la base (la referencia mide 1425 × 738).")]
-        public float baseScale = 1.12f;
-
-        [Header("Arte definitivo (opcional)")]
-        [Tooltip("Terreno + núcleo + módulo de agua en un solo sprite con la distribución de la referencia. " +
-                 "Si está vacío se dibujan placeholders. El arte de cada edificio va en BuildingData.icon.")]
-        public Sprite baseArt;
+        [Tooltip("Sprites originales (Assets/Data/Crater/ArtSet.asset).")]
+        public CraterArtSet art;
 
         GameManager G => GameManager.Instance;
 
@@ -40,13 +38,13 @@ namespace Crater.UI
         RectTransform menuScreen, setupScreen, gameScreen, scienceScreen, creditsScreen, optionsScreen, endScreen;
 
         // HUD
-        readonly ResourceIndicator[] indicators = new ResourceIndicator[4];
-        TextMeshProUGUI dayText, endDayHint;
+        readonly ResourceIndicator[] indicators = new ResourceIndicator[4]; // Comida, Energía, Oxígeno, Salud (orden de la referencia)
+        TextMeshProUGUI dayText, cycleText, endDayHint;
         RectTransform toastsRoot;
         Button endDayButton;
         BaseView baseView;
         EffectsLayer fx;
-        Image sun, earth;
+        RectTransform cameraRig;
         CanvasGroup transition;
         TextMeshProUGUI transitionText;
 
@@ -58,6 +56,13 @@ namespace Crater.UI
         void Start()
         {
             EnsureCameraAndEventSystem();
+            if (art == null)
+            {
+                Debug.LogError("[CRATER] UIManager no tiene asignado el arte original (Assets/Data/Crater/ArtSet.asset). Usa CRATER > Asignar arte original.");
+                art = ScriptableObject.CreateInstance<CraterArtSet>();
+            }
+            UIFactory.ArtPanel = art.panel;
+            UIFactory.ClickSound = () => G.sound.PlaySfx(art.sfxClick, 0.7f);
             Build();
             G.StateChanged += RefreshGame;
             G.Noticed += Toast;
@@ -65,7 +70,7 @@ namespace Crater.UI
             G.GameFinished += ShowEnd;
             G.DayEnded += OnDayEnded;
             G.events.PromptChanged += ShowPrompt;
-            G.events.EffectRequested += (type, intensity) => fx.Play(type, intensity);
+            G.events.EffectRequested += (type, intensity) => { fx.Play(type, intensity); if (type == CraterEventType.Micrometeorites) G.sound.PlaySfx(art.sfxMeteors); };
             G.nasa.Initialize(G.saves.UseLiveData);
             ShowMenu();
         }
@@ -113,12 +118,13 @@ namespace Crater.UI
             canvas.sortingOrder = 10;
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.referenceResolution = new Vector2(1920, 1080);  // 1 píxel de arte = 1 píxel de referencia
             scaler.matchWidthOrHeight = 0.5f;
             canvasGo.AddComponent<GraphicRaycaster>();
             root = (RectTransform)canvasGo.transform;
 
-            BuildSky(root);
+            var sky = UIFactory.Image(root, "Cielo", new Color(0.0f, 0.05f, 0.14f));
+            sky.rectTransform.Stretch();
             screensLayer = UIFactory.Rect(root, "Pantallas").Stretch();
             modalLayer = UIFactory.Rect(root, "Ventanas").Stretch();
             topLayer = UIFactory.Rect(root, "Superior").Stretch();
@@ -126,16 +132,17 @@ namespace Crater.UI
             menuScreen = BuildMainMenu();
             setupScreen = BuildSetup();
             gameScreen = BuildGameScreen();
+            BuildPauseMenu();
             optionsScreen = BuildOptions();
             creditsScreen = BuildCredits();
             scienceScreen = UIFactory.Rect(screensLayer, "Ciencia").Stretch();
             endScreen = UIFactory.Rect(screensLayer, "Final").Stretch();
 
-            toastsRoot = UIFactory.Rect(topLayer, "Avisos").Place(new Vector2(0.5f, 1), new Vector2(0, -135), new Vector2(820, 300), new Vector2(0.5f, 1));
+            toastsRoot = UIFactory.Rect(topLayer, "Avisos").Place(new Vector2(0.5f, 1), new Vector2(-150, -170), new Vector2(820, 300), new Vector2(0.5f, 1));
             var tv = UIFactory.VStack(toastsRoot.gameObject, 8);
             tv.childAlignment = TextAnchor.UpperCenter;
 
-            var tr = UIFactory.Image(topLayer, "Transicion", new Color(0.05f, 0.08f, 0.18f, 0.85f));
+            var tr = UIFactory.Image(topLayer, "Transicion", new Color(0.0f, 0.03f, 0.10f, 0.85f));
             tr.rectTransform.Stretch();
             transition = tr.gameObject.AddComponent<CanvasGroup>();
             transition.alpha = 0; transition.blocksRaycasts = false;
@@ -143,37 +150,27 @@ namespace Crater.UI
             transitionText.rectTransform.Stretch();
         }
 
-        void BuildSky(RectTransform parent)
+        /// <summary>Fondo de las pantallas de menú: el fondo original de la pantalla de inicio.</summary>
+        void MenuBackdrop(RectTransform screen)
         {
-            var sky = UIFactory.Image(parent, "Cielo", new Color(0.02f, 0.04f, 0.12f));
-            sky.rectTransform.Stretch();
-            var rnd = new System.Random(3);
-            for (int i = 0; i < 140; i++)
-            {
-                bool warm = rnd.NextDouble() < 0.3;
-                var s = UIFactory.Image(parent, "Estrella", warm ? new Color(1f, 0.75f, 0.4f, 0.9f) : new Color(1, 1, 1, (float)(0.4 + rnd.NextDouble() * 0.6)), SpriteFactory.Circle);
-                float size = (float)(2 + rnd.NextDouble() * 4);
-                s.rectTransform.Place(new Vector2((float)rnd.NextDouble(), (float)(0.55 + rnd.NextDouble() * 0.45)), Vector2.zero, new Vector2(size, size));
-            }
-            sun = UIFactory.Image(parent, "Sol", new Color(1f, 0.92f, 0.55f), SpriteFactory.Circle);
-            sun.rectTransform.Place(new Vector2(1, 1), new Vector2(-120, -175), new Vector2(60, 60));
-            var glow = UIFactory.Image(sun.transform, "Brillo", new Color(1f, 0.85f, 0.4f, 0.45f), SpriteFactory.Glow);
-            glow.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(180, 180));
-            earth = UIFactory.Image(parent, "Tierra", new Color(0.18f, 0.35f, 0.70f), SpriteFactory.Circle);
-            earth.rectTransform.Place(new Vector2(1, 1), new Vector2(-40, -165), new Vector2(70, 70));
+            if (art.titleBackground == null) return;
+            var bg = UIFactory.Image(screen, "FondoInicio", Color.white, art.titleBackground);
+            bg.rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, art.titleBackground.rect.size);
         }
 
         void ShowOnly(RectTransform screen)
         {
             foreach (var s in new[] { menuScreen, setupScreen, gameScreen, scienceScreen, creditsScreen, optionsScreen, endScreen })
                 if (s != null) s.gameObject.SetActive(s == screen);
+            if (screen != gameScreen && G.Paused) ClosePause();
+            UpdateMusic();
         }
 
         void CloseAllModals()
         {
             if (eventOverlay != null) Destroy(eventOverlay.gameObject);
             eventOverlay = null;
-            CloseBuildingCard();
+            CloseBuildingCard(true);
             CloseTutorial();
         }
 
@@ -183,40 +180,67 @@ namespace Crater.UI
         {
             var scr = UIFactory.Rect(screensLayer, "Juego").Stretch();
 
-            // Base en el centro, con las proporciones de la referencia
-            var holder = UIFactory.Rect(scr, "ContenedorBase").Place(new Vector2(0.5f, 0.5f), new Vector2(0, -2), new Vector2(BaseView.RefWidth, BaseView.RefHeight));
-            holder.localScale = Vector3.one * baseScale;
-            baseView = BaseView.Create(holder, G.buildingData, baseArt);
-            ((RectTransform)baseView.transform).Stretch();
+            // Vista con cámara: el mundo usa los píxeles del fondo original.
+            var view = UIFactory.Rect(scr, "Vista").Stretch();
+            view.gameObject.AddComponent<RectMask2D>();
+            cameraRig = UIFactory.Rect(view, "Camara").TopLeft(Vector2.zero, CraterLayout.ViewSize);
+            var world = UIFactory.Rect(cameraRig, "Mundo");
+            world.anchorMin = world.anchorMax = new Vector2(0, 1);
+            world.pivot = new Vector2(0, 1);
+            world.anchoredPosition = new Vector2(-CraterLayout.ViewOrigin.x, CraterLayout.ViewOrigin.y);
+            world.sizeDelta = CraterLayout.WorldSize;
+            baseView = BaseView.Create(world, art);
             foreach (var b in baseView.buildings) b.Selected += OpenBuildingCard;
-            fx = EffectsLayer.Create(scr);
+            fx = EffectsLayer.Create(scr, art);
 
-            // Barra superior: solo los 4 recursos y el día
-            var bar = UIFactory.Image(scr, "BarraSuperior", new Color(0.05f, 0.08f, 0.18f, 0.8f));
-            bar.rectTransform.anchorMin = new Vector2(0, 1); bar.rectTransform.anchorMax = new Vector2(1, 1);
-            bar.rectTransform.pivot = new Vector2(0.5f, 1);
-            bar.rectTransform.offsetMin = new Vector2(0, -124); bar.rectTransform.offsetMax = Vector2.zero;
-            string[] names = { "Energía", "Oxígeno", "Comida", "Salud" };
-            string[] letters = { "E", "O2", "C", "S" };
-            Color[] colors = { Theme.Energy, Theme.Oxygen, Theme.Food, Theme.Health };
+            // Barra superior original: casillas Comida (agua y comida), Energía, Oxígeno y Salud (vivienda).
+            var hud = UIFactory.Rect(scr, "HUD").Stretch();
+            if (art.topBar != null) UIFactory.Image(hud, "FondoRecursos", Color.white, art.topBar).rectTransform.TopLeft(CraterLayout.TopBar, art.topBar.rect.size);
+            string[] names = { "Comida", "Energía", "Oxígeno", "Salud" };
+            Sprite[] slots = { art.slotFood, art.slotEnergy, art.slotOxygen, art.slotHealth };
+            Sprite[] icons = { art.iconFood, art.iconEnergy, art.iconOxygen, art.iconHealth };
             for (int i = 0; i < 4; i++)
-            {
-                indicators[i] = ResourceIndicator.Create(bar.transform, names[i], letters[i], colors[i]);
-                ((RectTransform)indicators[i].transform).Place(new Vector2(0, 0.5f), new Vector2(24 + i * 362, 0), new Vector2(348, 104), new Vector2(0, 0.5f));
-            }
-            var dayCard = UIFactory.Panel(bar.transform, "Dia", Theme.Panel, false);
-            dayCard.rectTransform.Place(new Vector2(1, 0.5f), new Vector2(-24, 0), new Vector2(330, 104), new Vector2(1, 0.5f));
-            dayText = UIFactory.Text(dayCard.transform, "Texto", "DÍA 01 / 24", 44, Theme.Ink, TextAlignmentOptions.Center, FontStyles.Bold);
-            dayText.rectTransform.Stretch();
+                indicators[i] = ResourceIndicator.Create(hud, names[i], slots[i], icons[i], CraterLayout.Slots[i], CraterLayout.IconCenters[i]);
 
-            // Botón principal
-            endDayButton = UIFactory.Button(scr, "TerminarDia", "TERMINAR DÍA", Theme.Accent, Color.white, 40, () => { CloseBuildingCard(); G.turns.EndDay(); });
-            ((RectTransform)endDayButton.transform).Place(new Vector2(0.5f, 0), new Vector2(0, 22), new Vector2(460, 100), new Vector2(0.5f, 0));
-            endDayHint = UIFactory.Text(scr, "Pista", "", 22, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-            endDayHint.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, 126), new Vector2(900, 30), new Vector2(0.5f, 0));
+            // Menú (hamburguesa): guarda y vuelve al menú principal.
+            var menuBg = UIFactory.Image(hud, "FondoMenu", Color.white, art.menuBackground, true);
+            menuBg.rectTransform.TopLeft(CraterLayout.MenuBackground, art.menuBackground != null ? art.menuBackground.rect.size : new Vector2(184, 129));
+            var menuBtn = menuBg.gameObject.AddComponent<Button>();
+            menuBtn.targetGraphic = menuBg;
+            menuBtn.onClick.AddListener(() => { UIFactory.ClickSound?.Invoke(); OpenPause(); });
+            if (art.menuIcon != null) UIFactory.Image(hud, "IconoMenu", Color.white, art.menuIcon).rectTransform.TopLeft(CraterLayout.MenuIcon, art.menuIcon.rect.size);
 
-            var menu = UIFactory.Button(scr, "Menu", "MENÚ", new Color(0.96f, 0.97f, 0.99f, 0.9f), Theme.Ink, 24, () => { G.QuitToMenu(); ShowMenu(); });
-            ((RectTransform)menu.transform).Place(new Vector2(0, 0), new Vector2(24, 22), new Vector2(170, 70), Vector2.zero);
+            // Contador de días: DayCounter → Background, DayLabel, DayNumber, CycleLabel.
+            // Cada texto ocupa su zona del sprite (sin estirar el arte): "DÍA" y el número en el recuadro claro,
+            // el ciclo en la parte inferior. La franja transparente derecha del sprite queda fuera de pantalla.
+            var counter = UIFactory.Rect(hud, "DayCounter").TopLeft(CraterLayout.Days, art.daysBackground != null ? art.daysBackground.rect.size : new Vector2(201, 216));
+            var days = UIFactory.Image(counter, "Background", Color.white, art.daysBackground);
+            days.rectTransform.Stretch();
+            var dark = new Color(0.25f, 0.15f, 0.02f);
+            var box = CraterLayout.DayBox;
+            var dayLabel = UIFactory.Text(counter, "DayLabel", "DÍA", 22, dark, TextAlignmentOptions.Center, FontStyles.Bold);
+            dayLabel.rectTransform.TopLeft(new Vector2(box.xMin + 4, box.yMin + 3), new Vector2(box.width - 8, 22));
+            dayText = UIFactory.Text(counter, "DayNumber", "01/24", 40, dark, TextAlignmentOptions.Center, FontStyles.Bold);
+            dayText.rectTransform.TopLeft(new Vector2(box.xMin + 4, box.yMin + 25), new Vector2(box.width - 8, box.height - 28));
+            dayText.textWrappingMode = TextWrappingModes.NoWrap;
+            dayText.enableAutoSizing = true; dayText.fontSizeMin = 28; dayText.fontSizeMax = 40;
+            var low = CraterLayout.DayLower;
+            cycleText = UIFactory.Text(counter, "CycleLabel", "CICLO 1 DE 6", 24, new Color(0.99f, 0.92f, 0.75f), TextAlignmentOptions.Center, FontStyles.Bold);
+            cycleText.rectTransform.TopLeft(new Vector2(low.xMin + 8, low.yMin + 14), new Vector2(low.width - 16, 60));
+            cycleText.textWrappingMode = TextWrappingModes.NoWrap;
+            cycleText.enableAutoSizing = true; cycleText.fontSizeMin = 16; cycleText.fontSizeMax = 24;
+
+            // Botón de siguiente turno (TERMINAR DÍA).
+            var next = UIFactory.Image(hud, "SiguienteTurno", Color.white, art.nextTurn, true);
+            next.rectTransform.TopLeft(CraterLayout.NextTurn, art.nextTurn != null ? art.nextTurn.rect.size : new Vector2(425, 182));
+            endDayButton = next.gameObject.AddComponent<Button>();
+            endDayButton.targetGraphic = next;
+            var nc = endDayButton.colors; nc.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.8f); endDayButton.colors = nc;
+            endDayButton.onClick.AddListener(() => { if (!G.turns.CanEndDay(out _)) return; CloseBuildingCard(true); G.sound.PlaySfx(art.sfxGenerator, 0.6f); G.turns.EndDay(); });
+            var nextLabel = UIFactory.Text(next.transform, "Texto", "TERMINAR\nDÍA", 40, new Color(0.45f, 0.20f, 0.02f), TextAlignmentOptions.Center, FontStyles.Bold);
+            nextLabel.rectTransform.TopLeft(new Vector2(175, 20), new Vector2(235, 142));
+            endDayHint = UIFactory.Text(hud, "Pista", "", 22, Color.white, TextAlignmentOptions.Right, FontStyles.Bold);
+            endDayHint.rectTransform.TopLeft(new Vector2(1000, 812), new Vector2(900, 34));
 
             BuildBuildingCard(scr);
             return scr;
@@ -227,6 +251,8 @@ namespace Crater.UI
             CloseAllModals();
             ShowOnly(gameScreen);
             fx.SetEclipse(false);
+            fx.SetMeteors(false);
+            ResetCamera();
             RefreshGame();
         }
 
@@ -262,79 +288,158 @@ namespace Crater.UI
             var c = G.Config;
             var p = G.turns.Projection();
 
-            indicators[0].Show(s.energy, c.resourceMax, p.energy, c.alertThreshold);
-            indicators[1].Show(s.oxygen, c.resourceMax, p.oxygen, c.alertThreshold);
-            indicators[2].Show(s.food, c.resourceMax, p.food, c.alertThreshold);
+            indicators[0].Show(s.food, c.resourceMax, p.food, c.alertThreshold);
+            indicators[1].Show(s.energy, c.resourceMax, p.energy, c.alertThreshold);
+            indicators[2].Show(s.oxygen, c.resourceMax, p.oxygen, c.alertThreshold);
             indicators[3].Show(s.health, c.resourceMax, p.health, c.alertThreshold);
-            dayText.text = "DÍA " + Mathf.Min(s.day, s.totalTurns).ToString("00") + " / " + s.totalTurns.ToString("00");
+            dayText.text = Mathf.Min(s.day, s.totalTurns).ToString("00") + "/" + s.totalTurns.ToString("00");
+            cycleText.text = "CICLO " + s.Cycle + " DE " + s.TotalCycles;
 
-            for (int i = 0; i < 4; i++) baseView.buildings[i].Refresh(p.buildings[i]);
-            baseView.SetState(s, c);
-            fx.SetEclipse(s.today.eclipse);
-            sun.color = s.today.eclipse ? new Color(0.35f, 0.33f, 0.25f) : new Color(1f, 0.92f, 0.55f);
-            earth.rectTransform.anchoredPosition = s.today.eclipse ? new Vector2(-120, -175) : new Vector2(-40, -165);
+            // Eventos sobre la misma base: variantes y capas según el estado del día y la ventana abierta.
+            var prompt = G.events.Current;
+            bool eclipsePrompt = prompt != null && prompt.eventType == CraterEventType.EarthShadow;
+            bool meteorPrompt = prompt != null && prompt.eventType == CraterEventType.Micrometeorites;
+            if (prompt == null || prompt.kind != PromptKind.EclipseAllocation) baseView.PreviewEclipse(null);
+            baseView.SetState(s, p);
+            fx.SetEclipse(s.today.eclipse || eclipsePrompt);
+            fx.SetMeteors(meteorPrompt || s.today.panelsStowed || s.today.roversStowed);
 
             bool can = G.turns.CanEndDay(out string why);
             endDayButton.interactable = can;
             endDayHint.text = can ? "" : why;
             RefreshBuildingCard();
+            UpdateMusic();
         }
 
-        // ------------------------------------------------------------------ Ficha contextual del edificio
+        // ------------------------------------------------------------------ Cámara
+
+        bool zooming;
+        Coroutine cameraMove;
+
+        /// <summary>
+        /// Posición de la cámara para que el centro del edificio quede en ZoomTarget, sin salir de la zona
+        /// pintada del fondo (fuera de ella el sprite original tiene transparencias y trazos sueltos).
+        /// </summary>
+        Vector2 CameraPosFor(Vector2 focus, float zoom)
+        {
+            var o = CraterLayout.ViewOrigin;
+            var tgt = CraterLayout.ZoomTarget;
+            var min = CraterLayout.PaintedMin;
+            var max = CraterLayout.PaintedMax;
+            float left = Mathf.Clamp(focus.x - tgt.x / zoom, min.x, max.x - CraterLayout.ViewSize.x / zoom);
+            float top = Mathf.Clamp(focus.y - tgt.y / zoom, min.y, max.y - CraterLayout.ViewSize.y / zoom);
+            return new Vector2(-zoom * (left - o.x), zoom * (top - o.y));
+        }
+
+        void ResetCamera()
+        {
+            if (cameraMove != null) StopCoroutine(cameraMove);
+            zooming = false;
+            cameraRig.localScale = Vector3.one;
+            cameraRig.anchoredPosition = Vector2.zero;
+            baseView.SetSelectable(true);
+        }
+
+        IEnumerator MoveCamera(Vector2 pos, float zoom)
+        {
+            zooming = true;
+            Vector2 p0 = cameraRig.anchoredPosition;
+            float z0 = cameraRig.localScale.x, t = 0;
+            while (t < CraterLayout.ZoomSeconds)
+            {
+                t += Time.unscaledDeltaTime;
+                float k = Mathf.Clamp01(t / CraterLayout.ZoomSeconds);
+                k = k * k * (3f - 2f * k);
+                cameraRig.anchoredPosition = Vector2.Lerp(p0, pos, k);
+                cameraRig.localScale = Vector3.one * Mathf.Lerp(z0, zoom, k);
+                yield return null;
+            }
+            cameraRig.anchoredPosition = pos;
+            cameraRig.localScale = Vector3.one * zoom;
+            zooming = false;
+        }
+
+        // ------------------------------------------------------------------ Ficha del edificio (después del acercamiento)
 
         RectTransform card;
+        CanvasGroup cardGroup;
         TextMeshProUGUI cardName, cardStatus, cardInfo, cardNumbers;
         Button cardToggle;
         BuildingId? cardId;
 
         void BuildBuildingCard(RectTransform parent)
         {
-            var img = UIFactory.Panel(parent, "FichaEdificio", Theme.Panel, true);
-            card = img.rectTransform;
-            card.sizeDelta = new Vector2(430, 300);
-            card.anchorMin = card.anchorMax = new Vector2(0.5f, 0.5f);
-            cardName = UIFactory.Text(card, "Nombre", "", 30, Theme.Ink, TextAlignmentOptions.Left, FontStyles.Bold);
-            cardName.rectTransform.Place(new Vector2(0, 1), new Vector2(20, -12), new Vector2(330, 40), new Vector2(0, 1));
-            var close = UIFactory.Button(card, "Cerrar", "X", Theme.PanelSoft, Theme.Ink, 24, CloseBuildingCard);
-            ((RectTransform)close.transform).Place(new Vector2(1, 1), new Vector2(-12, -12), new Vector2(50, 50), new Vector2(1, 1));
-            cardStatus = UIFactory.Text(card, "Estado", "", 22, Theme.Good, TextAlignmentOptions.Left, FontStyles.Bold);
-            cardStatus.rectTransform.Place(new Vector2(0, 1), new Vector2(20, -54), new Vector2(390, 30), new Vector2(0, 1));
-            cardInfo = UIFactory.Text(card, "Funcion", "", 19, Theme.Ink);
-            cardInfo.rectTransform.Place(new Vector2(0, 1), new Vector2(20, -88), new Vector2(390, 76), new Vector2(0, 1));
-            cardNumbers = UIFactory.Text(card, "Numeros", "", 20, Theme.InkSoft, TextAlignmentOptions.Left, FontStyles.Bold);
-            cardNumbers.rectTransform.Place(new Vector2(0, 1), new Vector2(20, -168), new Vector2(390, 30), new Vector2(0, 1));
-            cardToggle = UIFactory.Button(card, "Encender", "", Theme.Good, Color.white, 26, () => { if (cardId.HasValue) G.buildings.Toggle(cardId.Value); });
-            ((RectTransform)cardToggle.transform).Place(new Vector2(0.5f, 0), new Vector2(0, 18), new Vector2(390, 70), new Vector2(0.5f, 0));
+            var img = UIFactory.Image(parent, "PanelEdificio", Color.white, art.panel, true);
+            img.type = Image.Type.Sliced;
+            card = img.rectTransform.TopLeft(CraterLayout.InfoPanelPos, CraterLayout.InfoPanelSize);
+            cardGroup = card.gameObject.AddComponent<CanvasGroup>();
+            // Márgenes ~7% a los lados; arriba se descuenta el borde transparente del sprite.
+            var body = UIFactory.Rect(card, "Contenido").Stretch(60, 44, 60, 30 + UIFactory.TopInset);
+            var v = UIFactory.VStack(body.gameObject, 18);
+            v.childForceExpandHeight = false;
+            Color ink = new Color(0.25f, 0.15f, 0.02f);
+            TextMeshProUGUI Block(string n, float size, float min, float height, Color c, FontStyles st)
+            {
+                var t = UIFactory.Text(body, n, "", size, c, TextAlignmentOptions.TopLeft, st);
+                t.enableAutoSizing = true; t.fontSizeMin = min; t.fontSizeMax = size;
+                t.overflowMode = TextOverflowModes.Ellipsis;
+                UIFactory.Size(t, height, -1, -1, height);
+                return t;
+            }
+            cardName = Block("Nombre", 58, 40, 76, ink, FontStyles.Bold);
+            cardName.textWrappingMode = TextWrappingModes.NoWrap;
+            cardStatus = Block("Estado", 32, 22, 86, Theme.Good, FontStyles.Bold);
+            cardInfo = Block("Funcion", 30, 22, 250, ink, FontStyles.Normal);
+            cardNumbers = Block("Numeros", 30, 20, 48, ink, FontStyles.Bold);
+            var spacer = UIFactory.Rect(body, "Espacio");
+            UIFactory.Size(spacer, 0).flexibleHeight = 1;
+            cardToggle = UIFactory.Button(body, "Encender", "", Theme.Good, ink, 40, () => { if (cardId.HasValue) G.buildings.Toggle(cardId.Value); });
+            UIFactory.Size(cardToggle, 120, -1, -1, 120);
+            var close = UIFactory.Button(body, "Cerrar", "CERRAR", Color.white, ink, 32, () => CloseBuildingCard(false));
+            UIFactory.Size(close, 100, -1, -1, 100);
             card.gameObject.SetActive(false);
         }
 
+        /// <summary>1) selección → 2) acercamiento de cámara → 3) al terminar, aparece el panel.</summary>
         void OpenBuildingCard(BuildingId id)
         {
-            if (cardId == id && card.gameObject.activeSelf) { CloseBuildingCard(); return; }
-            cardId = id;
-            for (int i = 0; i < 4; i++) baseView.buildings[i].SetSelected(i == (int)id);
+            if (zooming || cardId.HasValue || G.State == null || G.events.HasPending || G.turns.Busy || G.Paused) return;
+            StartCoroutine(SelectRoutine(id));
+        }
 
-            // Junto al edificio: a la derecha si está a la izquierda de la pantalla y viceversa.
-            var b = baseView.buildings[(int)id].Rect;
-            var corners = new Vector3[4];
-            b.GetWorldCorners(corners);
-            var parent = (RectTransform)card.parent;
-            Vector2 min = parent.InverseTransformPoint(corners[0]), max = parent.InverseTransformPoint(corners[2]);
-            bool left = (min.x + max.x) / 2f < 0;
-            float x = left ? max.x + 20 + card.sizeDelta.x / 2f : min.x - 20 - card.sizeDelta.x / 2f;
-            float y = Mathf.Clamp((min.y + max.y) / 2f, -parent.rect.height / 2f + 190, parent.rect.height / 2f - 290);
-            x = Mathf.Clamp(x, -parent.rect.width / 2f + 230, parent.rect.width / 2f - 230);
-            card.anchoredPosition = new Vector2(x, y);
+        IEnumerator SelectRoutine(BuildingId id)
+        {
+            baseView.SetSelectable(false);
+            cardId = id;
+            if (cameraMove != null) StopCoroutine(cameraMove);
+            cameraMove = StartCoroutine(MoveCamera(CameraPosFor(CraterLayout.Focus(id), CraterLayout.ZoomFactor), CraterLayout.ZoomFactor));
+            yield return cameraMove;
+            if (cardId != id) yield break;
             card.gameObject.SetActive(true);
             card.SetAsLastSibling();
             RefreshBuildingCard();
+            float t = 0;
+            while (t < 0.15f) { t += Time.unscaledDeltaTime; cardGroup.alpha = t / 0.15f; yield return null; }
+            cardGroup.alpha = 1;
         }
 
-        void CloseBuildingCard()
+        /// <summary>Oculta el panel y devuelve la cámara a la vista general (inmediato si "instant").</summary>
+        void CloseBuildingCard(bool instant)
         {
+            bool wasOpen = cardId.HasValue || zooming;
             cardId = null;
             if (card != null) card.gameObject.SetActive(false);
-            if (baseView != null) foreach (var b in baseView.buildings) b.SetSelected(false);
+            if (cameraRig == null) return;
+            if (instant || !wasOpen) { if (wasOpen || cameraRig.localScale.x != 1f) ResetCamera(); return; }
+            StartCoroutine(ZoomOutRoutine());
+        }
+
+        IEnumerator ZoomOutRoutine()
+        {
+            if (cameraMove != null) StopCoroutine(cameraMove);
+            cameraMove = StartCoroutine(MoveCamera(Vector2.zero, 1f));
+            yield return cameraMove;
+            baseView.SetSelectable(true);
         }
 
         void RefreshBuildingCard()
@@ -346,21 +451,19 @@ namespace Crater.UI
             var r = G.buildings.Result(id);
             cardName.text = st.name;
             cardStatus.text = BuildingManager.StatusLabel(r.visual) + (string.IsNullOrEmpty(r.reason) ? "" : ": " + r.reason);
-            cardStatus.color = r.visual == BuildingVisual.Working ? Theme.Good : r.visual == BuildingVisual.Off ? Theme.OffGray
-                             : r.visual == BuildingVisual.NoPower || r.visual == BuildingVisual.NoWater ? Theme.Bad : Theme.Warn;
+            cardStatus.color = r.visual == BuildingVisual.Working ? Theme.Good : r.visual == BuildingVisual.Off ? new Color(0.35f, 0.35f, 0.35f)
+                             : r.visual == BuildingVisual.NoPower || r.visual == BuildingVisual.NoWater ? Theme.Bad : new Color(0.65f, 0.40f, 0.0f);
             cardInfo.text = data.description + " " + data.howItWorks;
 
             var parts = new List<string>();
-            if (st.energy > 0) parts.Add("Energía +" + st.energy);
-            else if (st.energy < 0) parts.Add("Energía " + Num.Signed(st.energy));
+            if (st.energy != 0) parts.Add("Energía " + Num.Signed(st.energy));
             if (st.oxygen != 0) parts.Add("Oxígeno " + Num.Signed(st.oxygen));
             if (st.food != 0) parts.Add("Comida " + Num.Signed(st.food));
             cardNumbers.text = string.Join("   ", parts) + " por día";
 
             bool on = G.State.IsOn(id);
-            bool can = G.buildings.CanToggle(out _);
-            cardToggle.interactable = can;
-            cardToggle.GetComponent<Image>().color = on ? Theme.OffGray : Theme.Good;
+            cardToggle.interactable = G.buildings.CanToggle(out _);
+            cardToggle.GetComponent<Image>().color = UIFactory.ArtTint(on ? Theme.OffGray : Theme.Good);
             cardToggle.Label().text = on ? "APAGAR" : "ENCENDER";
         }
 
@@ -378,10 +481,10 @@ namespace Crater.UI
             var p = UIFactory.Panel(toastsRoot, "Aviso", Color.white, false);
             var stripe = UIFactory.Image(p.transform, "Color", Theme.Kind(kind), SpriteFactory.Rounded);
             stripe.rectTransform.anchorMin = Vector2.zero; stripe.rectTransform.anchorMax = new Vector2(0, 1);
-            stripe.rectTransform.offsetMax = new Vector2(14, 0);
+            stripe.rectTransform.offsetMin = new Vector2(8, 8); stripe.rectTransform.offsetMax = new Vector2(20, -26);
             var t = UIFactory.Text(p.transform, "Texto", text, 22, Theme.Ink, TextAlignmentOptions.Left, FontStyles.Bold);
-            t.rectTransform.Stretch(28, 8, 16, 8);
-            UIFactory.Size(p, Mathf.Max(60, t.GetPreferredValues(text, 760, 0).y + 20));
+            t.rectTransform.Stretch(32, 8, 16, 28);
+            UIFactory.Size(p, Mathf.Max(80, t.GetPreferredValues(text, 760, 0).y + 40));
             var cg = p.gameObject.AddComponent<CanvasGroup>();
             StartCoroutine(FadeToast(cg, kind == NoticeKind.Danger ? 6f : 4f));
         }

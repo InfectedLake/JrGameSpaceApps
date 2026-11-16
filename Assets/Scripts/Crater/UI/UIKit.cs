@@ -171,8 +171,87 @@ namespace Crater.UI
             return img;
         }
 
+        /// <summary>
+        /// Panel original del equipo ("fondo menu", 9-slice). Si está asignado, todos los paneles y botones lo usan
+        /// en lugar del rectángulo generado por código.
+        /// </summary>
+        public static Sprite ArtPanel;
+
+        /// <summary>El sprite original "fondo menu" tiene 23 px transparentes arriba: el contenido se baja esa distancia.</summary>
+        public static float TopInset => ArtPanel != null ? 23f : 0f;
+
+        /// <summary>Sonido de clic (lo asigna UIManager con el AudioManager).</summary>
+        public static Action ClickSound;
+
+        /// <summary>Ajusta un texto a su contenedor con márgenes, respetando el borde superior transparente del arte.</summary>
+        public static TextMeshProUGUI Fit(this TextMeshProUGUI t, float left, float bottom, float right, float top, float minSize, float maxSize)
+        {
+            t.rectTransform.Stretch(left, bottom, right, top + TopInset);
+            t.textWrappingMode = TextWrappingModes.Normal;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            t.enableAutoSizing = true;
+            t.fontSizeMin = minSize;
+            t.fontSizeMax = maxSize;
+            return t;
+        }
+
+        /// <summary>Slider horizontal con los colores del arte original (marco café, relleno naranja).</summary>
+        public static Slider Slider(Transform parent, string name, float value, UnityAction<float> onChange)
+        {
+            // Barra horizontal fina centrada (18 px) + manija circular de 34 × 34: la manija ya no se estira a
+            // todo el alto del control (eso la convertía en un óvalo vertical).
+            var root = Rect(parent, name);
+            var s = root.gameObject.AddComponent<UnityEngine.UI.Slider>();
+            var hit = root.gameObject.AddComponent<UnityEngine.UI.Image>();
+            hit.color = new Color(1, 1, 1, 0.001f);          // toda la fila responde al arrastre
+            var bg = Image(root, "Background", new Color(0.64f, 0.45f, 0.05f), SpriteFactory.Rounded);
+            bg.type = UnityEngine.UI.Image.Type.Sliced;          // extremos redondeados sin deformar la barra
+            bg.pixelsPerUnitMultiplier = 2.4f;                    // radio de esquina ~9 px para una barra de 18 px
+            bg.rectTransform.anchorMin = new Vector2(0, 0.5f); bg.rectTransform.anchorMax = new Vector2(1, 0.5f);
+            bg.rectTransform.offsetMin = new Vector2(0, -9); bg.rectTransform.offsetMax = new Vector2(0, 9);
+            var fillArea = Rect(root, "FillArea");
+            fillArea.anchorMin = new Vector2(0, 0.5f); fillArea.anchorMax = new Vector2(1, 0.5f);
+            fillArea.offsetMin = new Vector2(3, -6); fillArea.offsetMax = new Vector2(-3, 6);
+            var fill = Image(fillArea, "Fill", new Color(0.99f, 0.78f, 0.38f));
+            fill.rectTransform.Stretch();
+            var handleArea = Rect(root, "HandleSlideArea");
+            handleArea.anchorMin = new Vector2(0, 0.5f); handleArea.anchorMax = new Vector2(1, 0.5f);
+            handleArea.offsetMin = new Vector2(17, -17); handleArea.offsetMax = new Vector2(-17, 17);
+            var handle = Image(handleArea, "Handle", new Color(0.99f, 0.95f, 0.85f), SpriteFactory.Circle, true);
+            handle.rectTransform.anchorMin = new Vector2(0, 0.5f); handle.rectTransform.anchorMax = new Vector2(0, 0.5f);
+            // Slider pone las anclas verticales de la manija en 0..1 en cada actualización: con alto 0 la manija mide
+            // exactamente lo que su área (34 px). Un alto de 34 aquí se SUMABA al área y la volvía un óvalo vertical de 34 × 68.
+            handle.rectTransform.sizeDelta = new Vector2(34, 0);
+            var outline = Image(handle.transform, "Borde", new Color(0.64f, 0.45f, 0.05f), SpriteFactory.Ring);
+            outline.rectTransform.Stretch();
+            s.fillRect = fill.rectTransform;
+            s.handleRect = handle.rectTransform;
+            s.targetGraphic = handle;
+            s.direction = UnityEngine.UI.Slider.Direction.LeftToRight;
+            s.minValue = 0; s.maxValue = 1;
+            s.value = value;
+            s.onValueChanged.AddListener(onChange);
+            return s;
+        }
+
         public static Image Panel(Transform parent, string name, Color color, bool raycast = true)
-            => Image(parent, name, color, SpriteFactory.Rounded, raycast);
+        {
+            if (ArtPanel == null) return Image(parent, name, color, SpriteFactory.Rounded, raycast);
+            var img = Image(parent, name, ArtTint(color), ArtPanel, raycast);
+            img.type = UnityEngine.UI.Image.Type.Sliced;
+            return img;
+        }
+
+        /// <summary>Convierte los colores de la paleta provisional en tintes suaves sobre el arte naranja.</summary>
+        public static Color ArtTint(Color c)
+        {
+            if (c == Theme.Disabled) return new Color(0.70f, 0.70f, 0.70f, c.a);
+            if (c == Theme.Accent || c == Theme.AccentDark) return new Color(1f, 0.92f, 0.78f, c.a);
+            if (c == Theme.Good) return new Color(0.80f, 1f, 0.80f, c.a);
+            if (c == Theme.Bad) return new Color(1f, 0.70f, 0.65f, c.a);
+            if (c == Theme.OffGray) return new Color(0.80f, 0.80f, 0.80f, c.a);
+            return new Color(1f, 1f, 1f, c.a);
+        }
 
         public static TextMeshProUGUI Text(Transform parent, string name, string text, float size, Color color,
             TextAlignmentOptions align = TextAlignmentOptions.Left, FontStyles style = FontStyles.Normal)
@@ -201,8 +280,15 @@ namespace Crater.UI
             b.colors = colors;
             b.targetGraphic = img;
             if (onClick != null) b.onClick.AddListener(onClick);
+            b.onClick.AddListener(() => ClickSound?.Invoke());
+            if (ArtPanel != null && fg == Color.white) fg = Theme.Ink; // texto oscuro sobre el naranja original
             var t = Text(img.transform, "Label", label, fontSize, fg, TextAlignmentOptions.Center, FontStyles.Bold);
-            t.rectTransform.Stretch(10, 4, 10, 4);
+            t.rectTransform.Stretch(14, 6, 14, 6 + TopInset);
+            t.textWrappingMode = TextWrappingModes.Normal;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            t.enableAutoSizing = true;
+            t.fontSizeMin = Mathf.Max(14, fontSize * 0.6f);
+            t.fontSizeMax = fontSize;
             return b;
         }
 
@@ -273,19 +359,27 @@ namespace Crater.UI
         {
             var bg = Panel(parent, name, Color.white);
             var field = bg.gameObject.AddComponent<TMP_InputField>();
-            var area = Rect(bg.transform, "Text Area").Stretch(16, 6, 16, 6);
-            area.gameObject.AddComponent<RectMask2D>();
-            var ph = Text(area, "Placeholder", placeholder, 28, Theme.InkSoft, TextAlignmentOptions.Left, FontStyles.Italic);
+            // El área de escritura empieza debajo del borde transparente superior del sprite original (TopInset)
+            // y deja margen a los lados: así el texto y el marcador quedan centrados dentro de la caja visible.
+            var area = Rect(bg.transform, "Text Area").Stretch(22, 10, 22, 8 + TopInset);
+            area.gameObject.AddComponent<RectMask2D>();     // los nombres largos se desplazan sin salirse del campo
+            var ph = Text(area, "Placeholder", placeholder, 28, Theme.InkSoft, TextAlignmentOptions.MidlineLeft, FontStyles.Italic);
             ph.rectTransform.Stretch();
             ph.textWrappingMode = TextWrappingModes.NoWrap;
-            var txt = Text(area, "Text", "", 28, Theme.Ink, TextAlignmentOptions.Left);
+            ph.overflowMode = TextOverflowModes.Ellipsis;
+            var txt = Text(area, "Text", "", 28, Theme.Ink, TextAlignmentOptions.MidlineLeft);
             txt.rectTransform.Stretch();
             txt.textWrappingMode = TextWrappingModes.NoWrap;
+            txt.overflowMode = TextOverflowModes.Overflow;   // TMP_InputField desplaza el texto horizontalmente
             field.textViewport = area;
             field.textComponent = txt;
             field.placeholder = ph;
             field.targetGraphic = bg;
             field.characterLimit = 24;
+            field.lineType = TMP_InputField.LineType.SingleLine;
+            field.customCaretColor = true;
+            field.caretColor = Theme.Ink;
+            field.caretWidth = 2;
             field.text = value;
             return field;
         }

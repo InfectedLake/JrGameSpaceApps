@@ -178,3 +178,127 @@ Conclusiones:
 - Ninguna alternativa de los eventos menores es siempre mejor.
 
 **Misión corta (16 días):** las reservas iniciales alcanzan para casi todo (todo encendido gana el 99.6%), así que en la configuración se presenta como "Corta (fácil)". No se cambiaron las duraciones.
+
+## Integración del arte original (15-nov-2026)
+
+Reemplaza los dibujos provisionales del juego. Los archivos de `Assets/Sprites` **no se modificaron**; solo se cambió su configuración de importación (`.meta`).
+
+### Importación (49 sprites, sin incluir las 8 capturas "ejemplo…", que solo son referencia)
+
+Filter Mode Point, sin compresión, sin mipmaps, Sprite Mode Single, Mesh Type Full Rect, Wrap Clamp, Max Size 4096 (el fondo mide 2146 px y el filtro del eclipse 3003 px, así que con 2048 Unity los reducía) y Read/Write activado (para que solo los píxeles opacos de los edificios reciban clics). `fondo menu.png` tiene un borde 9-slice de 6/6/6/29 px.
+
+### Composición
+
+Las posiciones se midieron comparando píxel a píxel cada sprite con las capturas de referencia; están en `UI/CraterLayout.cs`. La captura de gameplay es la composición a escala 0.5, y la vista del juego es la ventana de 1920 × 1080 del fondo que empieza en (184, 636): a 1920 × 1080, 1 píxel de arte equivale a 1 píxel de pantalla. La reconstrucción con estas coordenadas difiere de la referencia en 17/255 de media, sobre todo por el reescalado.
+
+- **Orden de capas** (hermanos de uGUI, verificado contra la referencia): fondo → energía → agua y comida (incluye explanada y tanque) → rover → núcleo → oxígeno → vivienda. Las capas de cada evento son hijas de su edificio.
+- **Variantes:** un solo objeto por edificio. Cambia el sprite de la misma Image (encendida en el eclipse, energía rota por micrometeoritos) o activa su capa (agua / polvo). La zona clicable y la lógica no cambian.
+- **Tormenta solar:** con paredes de agua se activan las capas de agua; con regolito (o con el refugio listo), las de polvo. El núcleo y el tanque quedan sin capa, como en la referencia.
+- **Eclipse:** filtro de oscurecimiento, Sol y Tierra arriba al centro, durante el aviso y el día del eclipse. Brilla el edificio de cada sección con baterías, con vista previa en vivo mientras se reparten. El núcleo nunca se enciende.
+- **Micrometeoritos:** "meteoritos de fondo" durante la alerta y ese día. La energía usa "edificio energia roto" mientras los paneles estén averiados.
+- **Cámara:** al tocar un edificio, la cámara se acerca ×2 en 0.45 s (con suavizado). Recién después aparece el panel, en la posición de la captura de selección, y al cerrarlo vuelve a la vista general. No se puede seleccionar otro edificio mientras dura el movimiento ni con el panel abierto. La cámara nunca sale de la zona pintada del fondo.
+- **HUD:** barra superior original con las casillas Comida (agua y comida), Energía, Oxígeno y Salud (icono vivienda), el menú (hamburguesa), el recuadro de días y el botón ▶▶ de terminar el día.
+- **Menú principal:** fondo, letrero del título y los botones INICIO, OPCIONES, CRÉDITOS y SALIR. CIENCIA REAL está dentro de CRÉDITOS. Todos los paneles y botones de los demás menús y ventanas usan "fondo menu" con 9-slice.
+
+### Pendiente de arte (no se inventó ningún sustituto)
+
+| Falta | Situación actual |
+|---|---|
+| **Rover** (normal y roto): la carpeta no tiene ningún sprite de rover | Marcador temporal en la posición indicada por el README, junto al tanque de agua. Basta asignar `rover` / `roverBroken` en `ArtSet.asset`. |
+| `panel de informacion de edificio.png` | El archivo está vacío (todos los píxeles transparentes). Se usa "fondo menu", que tiene el mismo naranja que el panel de la captura. |
+| `boton seleccionado universal.png` | También está vacío. El botón seleccionado se aclara. |
+| Cráteres sobre la explanada del agua (captura de micrometeoritos) | No hay sprite para ese efecto. |
+| Estados apagado / sin energía fuera del eclipse | No hay variantes: se aplica un tinte a la Image (gris si está apagado, rojo intermitente si no tiene energía). Como el tanque está dentro del sprite de agua y comida, también se tiñe. |
+
+**Decisiones a revisar con el equipo:**
+- La casilla de recurso "vivienda" muestra la **Salud** de la tripulación (el juego no tiene un recurso "vivienda").
+- En el eclipse, la sección "Monitoreo y comunicaciones" ilumina la **vivienda**, porque es el único edificio restante con variante encendida.
+
+Si se cambian o renombran sprites: **CRATER > Asignar arte original** vuelve a enlazar `ArtSet.asset` por ruta y lo asigna al UIManager.
+
+## Corrección de interfaz y menú de pausa (15-nov-2026)
+
+### Sombra de la Tierra (bloqueaba la partida)
+**Causa:** las 4 tarjetas medían 4 × 270 px + espacios = 1116 px, pero el contenido solo tenía 1100 px. La cuarta pasaba a una segunda fila fuera del espacio reservado (300 px), quedaba encima de CONFIRMAR e interceptaba sus clics.
+
+**Solución:**
+- La ventana tiene una estructura vertical fija: encabezado con icono, título y subtítulo, luego el cuerpo, luego las decisiones.
+- Las tarjetas van en una cuadrícula 2 × 2 de igual tamaño, calculada con el ancho disponible.
+- El pie, con el indicador de baterías y CONFIRMAR, tiene un alto reservado.
+- CONFIRMAR solo se habilita con una distribución válida (costo ≤ baterías), se desactiva al primer clic (no hay doble aplicación) y llama a `EventManager.ConfirmEclipse`. Las reglas no cambiaron: 4 baterías, costos 2/1/1/1.
+
+### Texto y márgenes
+- **Ventanas de eventos:** el alto se calcula con el texto real, con un máximo de 1000 px, y los márgenes laterales son de ~6%. Los textos de las opciones usan tamaño automático acotado y puntos suspensivos.
+- **Borde del sprite:** el sprite "fondo menu" tiene 23 px transparentes arriba (`UIFactory.TopInset`); todos los textos y etiquetas de botón se bajan esa distancia para no quedar encima del borde.
+- **Casillas de recurso:** nombre arriba, cantidad y cambio abajo; antes el nombre se superponía con la cantidad.
+- **Recuadro de días:** se movió 61 px hacia dentro para que no se recorte (en la referencia salía 41 px del borde). Muestra el día y el ciclo.
+- **Otras pantallas:** el panel del edificio, el tutorial, la configuración, las opciones, los créditos, la ciencia y el final tienen márgenes y alturas fijas, con tamaño automático acotado.
+
+### Menú de pausa (botón de tres líneas)
+- **Contenido:** CONTINUAR, OPCIONES, MENÚ PRINCIPAL y SALIR DEL JUEGO; los dos últimos piden confirmación.
+- **Pausa:** `GameManager.SetPaused` (no existe un segundo PauseManager) pone `Time.timeScale = 0`. Además, TurnManager, BuildingManager, EventManager y la selección de edificios rechazan acciones mientras está en pausa, porque los turnos no dependen del tiempo. El fondo del menú bloquea todos los clics, y cerrarlo no cierra el evento pendiente.
+- **Menú principal:** respeta el guardado automático existente (inicio del día), limpia las ventanas pendientes y vuelve a la pantalla de menú. El menú principal es una pantalla de la misma escena, no una escena aparte.
+- **Salir:** usa `Application.Quit()`. En el Editor detiene el modo Play; en WebGL vuelve al menú y pide cerrar la pestaña.
+
+### Audio y opciones
+- **AudioManager:** es el único sistema de audio (no había AudioMixer). Volumen general → `AudioListener.volume`; música y efectos → una AudioSource cada uno. Se guarda en PlayerPrefs.
+- **Pantalla completa:** `Screen.fullScreen`; desactivada en móviles.
+- **Dónde están las opciones:** en el menú de pausa y en OPCIONES del menú principal, con los mismos controles y sincronizados.
+- **Música** (Assets/Audios): `menu` en los menús, `main` en la partida, `eclipse` durante el eclipse y `ataque(suspenso)` en la tormenta y los micrometeoritos.
+- **Efectos:** `botones` en cada clic, `real meteorits` en los impactos y `turbina` al terminar el día.
+
+## Ajustes de interfaz y sprites nuevos (15-nov-2026)
+
+### Contador de días
+"fondo dias pasados" (201 × 216) tiene el interior en x 6–167, un recuadro claro en (26, 27)–(155, 98) y después una franja transparente con borde que en la referencia queda fuera de pantalla. Al moverlo hacia dentro, esa franja quedó visible y el texto, centrado en todo el sprite, no coincidía con el recuadro.
+
+Ahora la jerarquía es `DayCounter → Background, DayLabel, DayNumber, CycleLabel`. "DÍA" y el número van en el recuadro claro, y el ciclo en la parte inferior, en una sola línea. El contador se coloca en x 1753, para que la parte diseñada termine en el borde derecho. El arte no se estira.
+
+### Opciones (menú principal)
+- **Tarjeta:** anclada a la pantalla (márgenes de 7% y 6%), así que no sale de la vista en ninguna resolución.
+- **Columnas:** dos de igual ancho con Layout Groups, "Sonido y pantalla" y "Datos y partida".
+- **Sliders:** horizontales, con una barra de 18 px y una manija circular de 34 × 34 (antes la manija se estiraba a todo el alto y parecía un óvalo vertical), y área de arrastre en toda la fila. Cada fila tiene la etiqueta a la izquierda, el slider en el centro y el porcentaje a la derecha. Los valores y el AudioManager no cambiaron.
+
+### Ciencia real
+Cada ficha muestra:
+- **Bloque REAL:** la etiqueta, el texto completo y la fuente justo debajo, dentro del mismo bloque.
+- **Bloque JUEGO:** la etiqueta y la explicación completa.
+
+Los textos son más grandes (28/26/22), tienen márgenes internos que respetan el borde transparente del sprite y alineación superior izquierda. El alto de los bloques crece con el contenido dentro de la vista con desplazamiento, así que no se recorta información.
+
+### Sprites nuevos (importación: Point, sin compresión ni mipmaps, Single, 4096, Read/Write)
+- **`recurso vivienda 1.png` (cruz verde 59 × 59):** es el icono de Salud. Los iconos ahora se colocan por su centro.
+- **`edificio agua y comida (…) 1.png`:** misma composición con el rover sobre la explanada, junto al tanque. Reemplaza al anterior en la misma posición. Se eliminó el marcador provisional del rover, así que no hay duplicados; `RoverView` solo muestra humo si está averiado. Como la variante encendida del eclipse no dibuja el rover, durante el eclipse se muestra encima, con una máscara (RectMask2D), el recorte (98, 304)–(395, 482) del sprite normal: el rover aparece en todas las variantes sin modificar el arte. La zona clicable del invernadero sigue sin incluir la explanada ni el tanque.
+- **`boton seleccionado universal 1.png` (447 × 135):** es el botón aclarado, ubicado en (46, 17), con un destello a la izquierda. Se muestra en los estados resaltado y seleccionado (`SelectedStateArt`) de los botones de la pantalla de inicio (INICIO, OPCIONES, CRÉDITOS, SALIR) y de la elección CONTINUAR / NUEVA PARTIDA / VOLVER. Como mide distinto que el botón (401 × 109), se superpone alineado en lugar de usar Sprite Swap, que lo deformaría; así no cambian ni el tamaño ni la zona clicable. No se aplica a los botones de gameplay ni de eventos.
+- Los archivos anteriores (`recurso vivienda.png`, la versión sin rover y `boton seleccionado universal.png`, que estaba vacío) siguen en la carpeta, sin referencias activas. No se borraron.
+
+## Corrección: invernadero en blanco y campos de nombre (15-nov-2026)
+
+- **Invernadero en blanco (causa):** el PNG "edificio agua y comida (…) 1" se volvió a guardar y Unity reimportó su `.meta` en modo **Multiple**, con dos recortes automáticos y la configuración por defecto (Bilinear, compresión, 2048). `ArtSet.asset` apunta al sprite completo del modo Single (`fileID 21300000`), que dejó de existir; la Image quedó sin sprite y Unity la dibuja blanca.
+- **Invernadero (solución):** el `.meta` vuelve a Single + Point, sin compresión ni mipmaps, 4096 y Read/Write; el PNG no se tocó. Las demás referencias de `ArtSet.asset` se revisaron y están en Single/Point.
+- **Prevención:** `CRATER > Asignar arte original` ahora devuelve a Single (con aviso) cualquier sprite usado como imagen completa. Si un edificio queda sin sprite, se registra un error claro y no se dibuja la caja blanca.
+- **Campos de nombre (causa):** el área de escritura de los campos de texto ocupaba también el borde transparente superior del sprite (23 px), así que el texto y el marcador se veían desplazados hacia arriba y pegados al borde.
+- **Campos de nombre (solución):** el área empieza debajo de ese borde, con márgenes laterales de 22 px. El texto queda centrado verticalmente y los nombres largos se desplazan dentro del campo sin salirse. Los campos de la configuración miden 78 px y la tarjeta 960 px para que todo quepa.
+
+## Botones de inicio: se restaura el estilo anterior (15-nov-2026)
+
+A pedido del equipo, se revirtió la integración de "boton seleccionado universal 1":
+- **Botones INICIO / OPCIONES / CRÉDITOS / SALIR:** vuelven a la transición de color anterior (normal 0.88, resaltado y seleccionado 1.0, presionado 0.75).
+- **Diálogo CONTINUAR / NUEVA PARTIDA / VOLVER:** vuelve a los botones de panel.
+- **Código:** se eliminó el componente `SelectedStateArt` y la constante de desplazamiento. `ArtSet.buttonSelected` vuelve a apuntar al archivo anterior y no se usa en ningún botón.
+- **Lo que se conserva:** el sonido de clic en estos botones, porque es audio y no estilo. El archivo `boton seleccionado universal 1.png` no se borró ni se modificó.
+
+## Pantalla de opciones: corrección estructural (15-nov-2026)
+Causas encontradas:
+- Las dos columnas iban en un `HorizontalLayoutGroup` que reparte el ancho según el ancho preferido de cada hijo. En TextMeshPro ese valor es el largo del texto sin saltos de línea, así que la columna de datos se llevaba casi todo el ancho y los sliders quedaban comprimidos.
+- La manija del slider tenía `sizeDelta = (34, 34)`, pero `Slider` fuerza sus anclas verticales a 0..1 en cada actualización: la altura se SUMABA al alto del área y la manija medía 34×68 (óvalo).
+
+Cambios:
+- `AdaptiveColumns` (nuevo): asigna anchos explícitos. Dos columnas iguales si cada una mide ≥ 640 px; si no, una sola columna (la segunda sección debajo). Ajusta la altura del contenido.
+- El cuerpo de la tarjeta es un `ScrollRect` con `RectMask2D`: nada se dibuja fuera de la ventana y VOLVER queda fijo abajo.
+- `Section()` crea cada columna (título + VerticalLayoutGroup).
+- `SoundRow_<nombre>` = `Label` (250 px) | `SliderContainer` (flexible, mín. 220) | `PercentageLabel` (86 px), con `LayoutElement` en cada parte.
+- Slider: `Background` (barra con bordes redondeados), `FillArea/Fill`, `HandleSlideArea/Handle` con `sizeDelta = (34, 0)` → manija circular de 34×34.
+- Se mantienen el botón de pantalla completa y los valores por defecto 100 % / 60 % / 80 % (`AudioManager`); si hay valores guardados en PlayerPrefs se muestran esos.
+
+Verificado con un render real de Unity 6000.3 (copia del proyecto, modo batch) en 1920×1080, 1280×720 y 2560×1080 (dos columnas) y 1440×1080 y 1080×1080 (una columna, con desplazamiento), además de las opciones del menú de pausa.

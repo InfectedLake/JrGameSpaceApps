@@ -29,6 +29,7 @@ namespace Crater.Systems
             if (G == null || !G.IsPlaying) { reason = "La misión terminó"; return false; }
             if (G.events.HasPending) { reason = "Primero responde al evento"; return false; }
             if (Busy) { reason = "Espera..."; return false; }
+            if (G.Paused) { reason = "Juego en pausa"; return false; }
             return true;
         }
 

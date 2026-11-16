@@ -67,6 +67,9 @@ namespace Crater.Core
         public bool eclipse;                // sombra de la Tierra: paneles a 0
         public bool eclipseOxygenUnpowered; // eclipse: sección de oxígeno sin baterías
         public float oxygenFactor = 1f;     // paredes de agua: oxígeno al 50%
+        // Solo para la presentación visual (no cambian reglas):
+        public int stormDefense = -1;       // defensa usada hoy contra la tormenta (RadiationDefense)
+        public bool eclipsePowerOxygen, eclipsePowerFood, eclipsePowerEnergy, eclipsePowerMonitoring;
 
         public DayModifiers Clone() => (DayModifiers)MemberwiseClone();
     }
