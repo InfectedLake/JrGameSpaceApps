@@ -57,10 +57,11 @@ MonoBehaviour:
   buttonCredits: {fileID: 21300000, guid: b661b5a90aedb7144bb39e8eef0dec00, type: 3}
   buttonExit: {fileID: 21300000, guid: f276b5a8815f22345a3cd9651861bbcf, type: 3}
   buttonSelected: {fileID: 21300000, guid: dac82f324ce7aee469ac11438df6a56e, type: 3}
+  mixer: {fileID: 24100000, guid: e500e578e0d59834eaf2021ccc92db5f, type: 2}
   musicMenu: {fileID: 8300000, guid: b9f7aececbba0c340ae721fd3e44e45e, type: 3}
   musicGame: {fileID: 8300000, guid: 26a36b8b628b9a941b6ebad61cdea0f9, type: 3}
-  musicEclipse: {fileID: 8300000, guid: f46ac49716257f843a7c957fb109553f, type: 3}
-  musicTension: {fileID: 8300000, guid: 19eecd66eb82cde41b5aabc6708b53a6, type: 3}
+  musicEvent: {fileID: 8300000, guid: 19eecd66eb82cde41b5aabc6708b53a6, type: 3}
   sfxClick: {fileID: 8300000, guid: 74b928e877101ab459d687b3539aeb6e, type: 3}
+  sfxEclipse: {fileID: 8300000, guid: f46ac49716257f843a7c957fb109553f, type: 3}
+  sfxRadiation: {fileID: 8300000, guid: d03d5d0290f1bfd408857a1fde247bb7, type: 3}
   sfxMeteors: {fileID: 8300000, guid: 7f534d41ecfbf3e40a8cb2e01031c755, type: 3}
-  sfxGenerator: {fileID: 8300000, guid: a56bcd5b69e28c9449502ca888183a4a, type: 3}

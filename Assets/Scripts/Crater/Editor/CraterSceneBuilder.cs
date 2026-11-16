@@ -79,6 +79,7 @@ namespace Crater.EditorTools
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Theme.Sky;
             camGo.transform.position = new Vector3(0, 0, -10);
+            camGo.AddComponent<AudioListener>();   // sin AudioListener Unity no reproduce ningún sonido
 
             var es = new GameObject("EventSystem", typeof(EventSystem));
 #if ENABLE_INPUT_SYSTEM
@@ -218,13 +219,15 @@ namespace Crater.EditorTools
                 if (a == null) Debug.LogWarning("[CRATER] No se encontró el audio Assets/Audios/" + path);
                 return a;
             }
+            set.mixer = AssetDatabase.LoadAssetAtPath<UnityEngine.Audio.AudioMixer>("Assets/Data/Crater/CraterMixer.mixer");
+            if (set.mixer == null) Debug.LogWarning("[CRATER] No se encontró Assets/Data/Crater/CraterMixer.mixer");
             set.musicMenu = A("Musica/menu.mp3");
             set.musicGame = A("Musica/main.mp3");
-            set.musicEclipse = A("Musica/eclipse.mp3");
-            set.musicTension = A("Musica/ataque(suspenso).mp3");
+            set.musicEvent = A("Musica/MusicaEventoGrande.mp3");
             set.sfxClick = A("Efectos/botones.mp3");
             set.sfxMeteors = A("Efectos/real meteorits.mp3");
-            set.sfxGenerator = A("Efectos/turbina (generador).mp3");
+            set.sfxEclipse = A("Efectos/eclipse.mp3");
+            set.sfxRadiation = A("Efectos/Radiacion.mp3");
             EditorUtility.SetDirty(set);
             AssetDatabase.SaveAssets();
             return set;

@@ -388,5 +388,81 @@ namespace Crater.Tests
             s.energy = 0; s.health = 3;
             Assert.IsFalse(MinorEventRules.CanResolve(s, frio));       // ninguna opción válida: se pospone
         }
+
+        // ---------------- Alerta anticipada y fases de los acontecimientos ----------------
+        [Test]
+        public void Alerta_DosDiasAntes_ParaLosTresEventos()
+        {
+            var c = Cfg();
+            foreach (CraterEventType t in System.Enum.GetValues(typeof(CraterEventType)))
+            {
+                Assert.AreEqual(2, EventScheduler.WarningLead(t, c), t.ToString());
+                var s = NewState(c);
+                s.schedule.Clear();
+                s.schedule.Add(new ScheduledEvent { type = t, day = 12 });
+                s.day = 9;  Assert.IsEmpty(EventScheduler.DueWarnings(s, c).ToList(), "día 9: todavía no");
+                s.day = 10; Assert.AreEqual(1, EventScheduler.DueWarnings(s, c).Count(), "día 10: alerta");
+            }
+        }
+
+        [Test]
+        public void Fases_ProgramadoAlertaPreparacionActivoResolviendoResuelto()
+        {
+            var c = Cfg(); var s = NewState(c);
+            var e = new ScheduledEvent { type = CraterEventType.SolarRadiation, day = 12 };
+            s.schedule.Clear(); s.schedule.Add(e);
+            s.day = 9;  Assert.AreEqual(EventPhase.Scheduled, EventScheduler.Phase(e, s, c));
+            Assert.IsNull(EventScheduler.MusicEvent(s, c));
+            s.day = 10; e.warningProcessed = true; e.warned = true; e.warningDay = 10;
+            Assert.AreEqual(EventPhase.Warning, EventScheduler.Phase(e, s, c));
+            Assert.AreSame(e, EventScheduler.MusicEvent(s, c));
+            s.day = 11; Assert.AreEqual(EventPhase.Preparation, EventScheduler.Phase(e, s, c));
+            s.day = 12; Assert.AreEqual(EventPhase.Active, EventScheduler.Phase(e, s, c));
+            e.resolved = true; e.resolvedDay = 12;
+            Assert.AreEqual(EventPhase.Resolving, EventScheduler.Phase(e, s, c));   // el jugador termina de adaptar la base
+            Assert.AreSame(e, EventScheduler.MusicEvent(s, c));
+            s.day = 13; Assert.AreEqual(EventPhase.Resolved, EventScheduler.Phase(e, s, c));
+            Assert.IsNull(EventScheduler.MusicEvent(s, c));
+        }
+
+        [Test]
+        public void Fases_EfectosDeVariosTurnos_MantienenElEventoActivo()
+        {
+            var c = Cfg(); var s = NewState(c);
+            var e = new ScheduledEvent { type = CraterEventType.EarthShadow, day = 12, warningProcessed = true, warned = true, resolved = true, resolvedDay = 12 };
+            s.schedule.Clear(); s.schedule.Add(e);
+            s.day = 13; s.energyOverheadTurns = 1;
+            Assert.AreEqual(EventPhase.Resolving, EventScheduler.Phase(e, s, c));
+            s.energyOverheadTurns = 0;
+            Assert.AreEqual(EventPhase.Resolved, EventScheduler.Phase(e, s, c));
+
+            var m = new ScheduledEvent { type = CraterEventType.Micrometeorites, day = 16, warningProcessed = true, warned = true, resolved = true, resolvedDay = 16 };
+            s.schedule.Add(m);
+            s.day = 17; s.rovers.repairTurnsLeft = 2;   // reparación con tiempo
+            Assert.AreEqual(EventPhase.Resolving, EventScheduler.Phase(m, s, c));
+            Assert.AreEqual(EventPhase.Resolved, EventScheduler.Phase(e, s, c));   // solo el último evento retiene la música
+        }
+
+        [Test]
+        public void Fases_SinAviso_NoHayMusicaHastaElDiaDelEvento()
+        {
+            var c = Cfg(); var s = NewState(c);
+            var e = new ScheduledEvent { type = CraterEventType.Micrometeorites, day = 12, warningProcessed = true, warned = false, warningDay = 10 };
+            s.schedule.Clear(); s.schedule.Add(e);
+            s.day = 11; Assert.AreEqual(EventPhase.Scheduled, EventScheduler.Phase(e, s, c));
+            s.day = 12; Assert.AreEqual(EventPhase.Active, EventScheduler.Phase(e, s, c));
+        }
+
+        [Test]
+        public void Fases_DosEventosSolapados_UnaSolaMusica_ManDaElActivo()
+        {
+            var c = Cfg(); var s = NewState(c);
+            var a = new ScheduledEvent { type = CraterEventType.EarthShadow, day = 12, warningProcessed = true, warned = true, warningDay = 10 };
+            var b = new ScheduledEvent { type = CraterEventType.SolarRadiation, day = 14, warningProcessed = true, warned = true, warningDay = 12 };
+            s.schedule.Clear(); s.schedule.Add(a); s.schedule.Add(b);
+            s.day = 12;
+            Assert.AreSame(a, EventScheduler.MusicEvent(s, c));
+            Assert.AreNotEqual(a.Uid, b.Uid);
+        }
     }
 }

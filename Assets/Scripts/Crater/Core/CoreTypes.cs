@@ -22,6 +22,13 @@ namespace Crater.Core
 
     public enum CraterEventType { SolarRadiation = 0, Micrometeorites = 1, EarthShadow = 2 }
 
+    /// <summary>
+    /// Ciclo de vida de un acontecimiento principal (lo calcula EventScheduler.Phase a partir del estado guardado).
+    /// Scheduled → Warning (día de la alerta) → Preparation (días hasta el evento) → Active (día del evento,
+    /// hasta resolverlo) → Resolving (resto de ese día y mientras duren sus efectos de varios turnos) → Resolved.
+    /// </summary>
+    public enum EventPhase { Scheduled, Warning, Preparation, Active, Resolving, Resolved }
+
     public enum RadiationDefense { None = 0, WaterWalls = 1, RegolithIgloo = 2, Bunker = 3 }
 
     public enum MeteorProtect { None = -1, Panels = 0, Rovers = 1 }
@@ -85,9 +92,14 @@ namespace Crater.Core
         public int choice = -1;               // decisión tomada durante el aviso
         public int choiceDay = -1;
         public bool resolved;
+        public int warningDay = -1;           // día en que se mostró la alerta anticipada
+        public int resolvedDay = -1;          // día en que el jugador resolvió el acontecimiento
         public DataKind dataKind;
         public string dataLabel = "";
         public string dataDetail = "";
+
+        /// <summary>Identificador único del acontecimiento (un evento por ciclo: tipo + día no se repiten).</summary>
+        public string Uid => (int)type + "@" + day;
     }
 
     [Serializable]

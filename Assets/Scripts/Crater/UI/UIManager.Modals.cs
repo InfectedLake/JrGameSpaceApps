@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Crater.Core;
 using Crater.Data;
@@ -130,14 +131,75 @@ namespace Crater.UI
 
         // ------------------------------------------------------------------ Eventos
 
+        // Presentación de un acontecimiento principal cuando OCURRE (EventPrompt.arrival):
+        //   etapa 0: espera la transición del día y la pausa (no suena nada todavía)
+        //   etapa 1: notificación inicial + empieza la música del evento
+        //   etapa 2: aparece el fenómeno en la base + su efecto de sonido
+        //   después: la ventana de decisiones. Cada ventana se presenta una sola vez (lastIntro).
+        Coroutine introRoutine;
+        EventPrompt introPrompt, lastIntro;
+        int introStage = -1;
+
+        /// <summary>Mientras se presenta un acontecimiento, el fenómeno visual espera a la etapa 2.</summary>
+        bool HoldEventVisuals => introPrompt != null && introStage < 2;
+
         void ShowPrompt(EventPrompt p)
         {
+            if (introRoutine != null) StopCoroutine(introRoutine);
+            introRoutine = null;
+            introPrompt = null;
+            introStage = -1;
             if (eventOverlay != null) Destroy(eventOverlay.gameObject);
             eventOverlay = null;
             CloseBuildingCard(true);
+            if (p != null && p.arrival && p.eventType.HasValue && p != lastIntro)
+            {
+                lastIntro = p;
+                introPrompt = p;
+                introStage = 0;
+                RefreshGame();
+                introRoutine = StartCoroutine(EventIntro(p));
+                return;
+            }
             RefreshGame();
             if (p == null) return;
+            BuildPromptWindow(p);
+        }
 
+        IEnumerator EventIntro(EventPrompt p)
+        {
+            yield return null;                                     // deja empezar la transición del día
+            while (G.turns.Busy || G.Paused) yield return null;
+            if (G.events.Current != p) yield break;
+
+            introStage = 1;
+            Toast(p.title + ": " + p.subtitle, NoticeKind.Warning);
+            UpdateMusic();                                         // la música del evento empieza con la notificación
+
+            for (float t = 0; t < 1.6f; ) { if (!G.Paused) t += Time.unscaledDeltaTime; yield return null; }   // no avanza en pausa
+            if (G.events.Current != p) yield break;
+
+            introStage = 2;
+            var type = p.eventType.Value;
+            if (type != CraterEventType.EarthShadow) fx.Play(type, p.intensity);   // el eclipse se oscurece con RefreshGame
+            RefreshGame();
+            G.sound.PlayEventSfx(EventSfx(type));                  // el efecto acompaña al fenómeno visual
+
+            for (float t = 0; t < 1.4f; ) { if (!G.Paused) t += Time.unscaledDeltaTime; yield return null; }   // no avanza en pausa
+            if (G.events.Current != p) yield break;
+
+            introRoutine = null;
+            introPrompt = null;
+            introStage = -1;
+            RefreshGame();
+            BuildPromptWindow(p);
+        }
+
+        AudioClip EventSfx(CraterEventType type) =>
+            type == CraterEventType.EarthShadow ? art.sfxEclipse : type == CraterEventType.Micrometeorites ? art.sfxMeteors : art.sfxRadiation;
+
+        void BuildPromptWindow(EventPrompt p)
+        {
             bool eclipse = p.kind == PromptKind.EclipseAllocation;
             bool info = p.kind == PromptKind.Info;
             bool twoCols = p.options.Count >= 4;

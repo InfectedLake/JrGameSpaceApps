@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Audio;
+using UnityEngine.Serialization;
 
 namespace Crater.Data
 {
@@ -42,13 +44,20 @@ namespace Crater.Data
         [Tooltip("PENDIENTE: el archivo original está vacío (todos sus píxeles son transparentes).")]
         public Sprite buttonSelected;
 
-        [Header("Audio (Assets/Audios)")]
-        public AudioClip musicMenu;
-        public AudioClip musicGame;
-        public AudioClip musicEclipse;
-        public AudioClip musicTension;     // tormenta solar y micrometeoritos
-        public AudioClip sfxClick;
-        public AudioClip sfxMeteors;
-        public AudioClip sfxGenerator;     // al terminar el día
+        [Header("Mezclador (Assets/Data/Crater/CraterMixer.mixer): Master > Music, SFX")]
+        public AudioMixer mixer;
+
+        [Header("Música (Assets/Audios/Musica)")]
+        public AudioClip musicMenu;        // menu.mp3: menú principal (loop)
+        public AudioClip musicGame;        // main.mp3: gameplay (loop)
+        [FormerlySerializedAs("musicTension")]
+        public AudioClip musicEvent;       // MusicaEventoGrande.mp3: los tres acontecimientos principales
+
+        [Header("Efectos (Assets/Audios/Efectos)")]
+        public AudioClip sfxClick;         // botones.mp3: interfaz
+        [FormerlySerializedAs("musicEclipse")]
+        public AudioClip sfxEclipse;       // eclipse.mp3: la base se oscurece
+        public AudioClip sfxRadiation;     // Radiacion.mp3: llega la tormenta solar
+        public AudioClip sfxMeteors;       // real meteorits.mp3: impactos
     }
 }
